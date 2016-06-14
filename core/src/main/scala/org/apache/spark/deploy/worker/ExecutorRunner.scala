@@ -40,6 +40,7 @@ private[deploy] class ExecutorRunner(
     val appDesc: ApplicationDescription,
     val cores: Int,
     val memory: Int,
+    val cpuset: String,
     val worker: RpcEndpointRef,
     val workerId: String,
     val host: String,
@@ -141,7 +142,7 @@ private[deploy] class ExecutorRunner(
     try {
       // Launch the process
       val builder = CommandUtils.buildProcessBuilder(appDesc.command, new SecurityManager(conf),
-        memory, sparkHome.getAbsolutePath, substituteVariables)
+        memory, cpuset, sparkHome.getAbsolutePath, substituteVariables)
       val command = builder.command()
       val formattedCommand = command.asScala.mkString("\"", "\" \"", "\"")
       logInfo(s"Launch command: $formattedCommand")
