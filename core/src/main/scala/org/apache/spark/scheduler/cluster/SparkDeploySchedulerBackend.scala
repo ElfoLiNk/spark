@@ -135,6 +135,11 @@ private[spark] class SparkDeploySchedulerBackend(
       fullId, hostPort, cores, Utils.megabytesToString(memory)))
   }
 
+  override def executorScaled(fullId: String, workerId: String, hostPort: String, cores: Int) {
+    logInfo("Scaled executor ID %s on hostPort %s with %d cores".format(
+      fullId, hostPort, cores))
+  }
+
   override def executorRemoved(fullId: String, message: String, exitStatus: Option[Int]) {
     val reason: ExecutorLossReason = exitStatus match {
       case Some(code) => ExecutorExited(code, exitCausedByApp = true, message)

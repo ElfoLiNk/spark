@@ -41,6 +41,8 @@ private[spark] object TestClient {
 
     def executorAdded(id: String, workerId: String, hostPort: String, cores: Int, memory: Int) {}
 
+    def executorScaled(id: String, workerId: String, hostPort: String, cores: Int) {}
+
     def executorRemoved(id: String, message: String, exitStatus: Option[Int]) {}
   }
 

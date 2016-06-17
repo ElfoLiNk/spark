@@ -35,5 +35,7 @@ private[spark] trait AppClientListener {
 
   def executorAdded(fullId: String, workerId: String, hostPort: String, cores: Int, memory: Int)
 
+  def executorScaled(fullId: String, workerId: String, hostPort: String, cores: Int)
+
   def executorRemoved(fullId: String, message: String, exitStatus: Option[Int]): Unit
 }
