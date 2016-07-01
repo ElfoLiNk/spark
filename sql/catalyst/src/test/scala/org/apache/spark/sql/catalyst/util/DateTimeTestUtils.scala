@@ -15,27 +15,26 @@
  * limitations under the License.
  */
 
-// scalastyle:off println
-package org.apache.spark.examples
+package org.apache.spark.sql.catalyst.util
 
-import scala.math.random
+import java.util.TimeZone
 
-import org.apache.spark._
+/**
+ * Helper functions for testing date and time functionality.
+ */
+object DateTimeTestUtils {
 
-/** Computes an approximation to pi */
-object SparkPi {
-  def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("Spark Pi")
-    val spark = new SparkContext(conf)
-    val slices = if (args.length > 0) args(0).toInt else 2
-    val n = math.min(100000L * slices, Int.MaxValue).toInt // avoid overflow
-    val count = spark.parallelize(1 until n, slices).map { i =>
-      val x = random * 2 - 1
-      val y = random * 2 - 1
-      if (x*x + y*y < 1) 1 else 0
-    }.reduce(_ + _)
-    println("Pi is roughly " + 4.0 * count / (n - 1))
-    spark.stop()
+  val ALL_TIMEZONES: Seq[TimeZone] = TimeZone.getAvailableIDs.toSeq.map(TimeZone.getTimeZone)
+
+  def withDefaultTimeZone[T](newDefaultTimeZone: TimeZone)(block: => T): T = {
+    val originalDefaultTimeZone = TimeZone.getDefault
+    try {
+      DateTimeUtils.resetThreadLocals()
+      TimeZone.setDefault(newDefaultTimeZone)
+      block
+    } finally {
+      TimeZone.setDefault(originalDefaultTimeZone)
+      DateTimeUtils.resetThreadLocals()
+    }
   }
 }
-// scalastyle:on println
