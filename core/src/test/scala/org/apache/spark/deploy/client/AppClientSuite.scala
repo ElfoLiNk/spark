@@ -166,6 +166,7 @@ class AppClientSuite extends SparkFunSuite with LocalSparkContext with BeforeAnd
     @volatile var disconnectedCount: Int = 0
     val deadReasonList = new ArrayBuffer[String] with SynchronizedBuffer[String]
     val execAddedList = new ArrayBuffer[String] with SynchronizedBuffer[String]
+    val execScaledList = new ArrayBuffer[String] with SynchronizedBuffer[String]
     val execRemovedList = new ArrayBuffer[String] with SynchronizedBuffer[String]
 
     def connected(id: String): Unit = {
@@ -189,6 +190,14 @@ class AppClientSuite extends SparkFunSuite with LocalSparkContext with BeforeAnd
         cores: Int,
         memory: Int): Unit = {
       execAddedList += id
+    }
+
+    def executorScaled(
+                       id: String,
+                       workerId: String,
+                       hostPort: String,
+                       cores: Int): Unit = {
+      execScaledList += id
     }
 
     def executorRemoved(id: String, message: String, exitStatus: Option[Int]): Unit = {
