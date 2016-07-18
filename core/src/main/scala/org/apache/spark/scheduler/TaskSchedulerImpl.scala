@@ -80,6 +80,8 @@ private[spark] class TaskSchedulerImpl(
   private[scheduler] val taskIdToTaskSetManager = new HashMap[Long, TaskSetManager]
   val taskIdToExecutorId = new HashMap[Long, String]
 
+  val execIdToTaskSets = new HashMap[String, List[Long]]
+
   @volatile private var hasReceivedTask = false
   @volatile private var hasLaunchedTask = false
   private val starvationTimer = new Timer(true)
@@ -230,6 +232,9 @@ private[spark] class TaskSchedulerImpl(
       taskSetsForStage -= manager.taskSet.stageAttemptId
       if (taskSetsForStage.isEmpty) {
         taskSetsByStageIdAndAttempt -= manager.taskSet.stageId
+        for(k <- execIdToTaskSets.keys ) {
+          if (execIdToTaskSets(k).contains(manager.taskSet.stageId)) execIdToTaskSets(k) = List()
+        }
       }
     }
     manager.parent.removeSchedulable(manager)
@@ -247,13 +252,15 @@ private[spark] class TaskSchedulerImpl(
     for (i <- 0 until shuffledOffers.size) {
       val execId = shuffledOffers(i).executorId
       val host = shuffledOffers(i).host
-      if (availableCpus(i) >= CPUS_PER_TASK) {
+      if (availableCpus(i) >= CPUS_PER_TASK && (execIdToTaskSets(execId).contains(taskSet.stageId)
+        || execIdToTaskSets(execId).isEmpty)) {
         try {
           for (task <- taskSet.resourceOffer(execId, host, maxLocality)) {
             tasks(i) += task
             val tid = task.taskId
             taskIdToTaskSetManager(tid) = taskSet
             taskIdToExecutorId(tid) = execId
+            execIdToTaskSets(execId) = taskSet.stageId :: execIdToTaskSets(execId)
             executorIdToTaskCount(execId) += 1
             executorsByHost(host) += execId
             availableCpus(i) -= CPUS_PER_TASK
