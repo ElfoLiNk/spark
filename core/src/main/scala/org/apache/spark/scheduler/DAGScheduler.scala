@@ -152,6 +152,8 @@ class DAGScheduler(
 
   private[scheduler] val activeJobs = new HashSet[ActiveJob]
 
+  val stageIdToWeight = new HashMap[Int, Int]
+
   /**
    * Contains the locations that each RDD's partitions are cached on.  This map's keys are RDD ids
    * and its values are arrays indexed by partition numbers. Each array value is the set of
@@ -368,10 +370,20 @@ class DAGScheduler(
     stage
   }
 
+
+
+  private def setWeight(node: Stage): Unit = {
+     node.parents.foreach { parent =>
+       val w1 = stageIdToWeight.getOrElse(node.id, 0) + 1
+       val w2 = stageIdToWeight.getOrElse(parent.id, 0)
+       stageIdToWeight(node.id) = math.max(w1, w2)
+       this.setWeight(parent)
+    }
+  }
   /**
-   * Get or create the list of parent stages for a given RDD.  The new Stages will be created with
-   * the provided firstJobId.
-   */
+    * Get or create the list of parent stages for a given RDD.  The new Stages will be created with
+    * the provided firstJobId.
+    */
   private def getParentStages(rdd: RDD[_], firstJobId: Int): List[Stage] = {
     val parents = new HashSet[Stage]
     val visited = new HashSet[RDD[_]]
@@ -835,6 +847,8 @@ class DAGScheduler(
       // New stage creation may throw an exception if, for example, jobs are run on a
       // HadoopRDD whose underlying HDFS files have been deleted.
       finalStage = newResultStage(finalRDD, func, partitions, jobId, callSite)
+      setWeight(finalStage)
+      logInfo(stageIdToWeight.toString())
     } catch {
       case e: Exception =>
         logWarning("Creating new stage failed due to exception - job: " + jobId, e)
