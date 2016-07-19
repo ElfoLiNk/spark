@@ -845,10 +845,12 @@ class DAGScheduler(
     var finalStage: ResultStage = null
     try {
       // New stage creation may throw an exception if, for example, jobs are run on a
-      // HadoopRDD whose underlying HDFS files have been deleted.
+      // HadoopRDD whose underlying HDFS files have been deleted
       finalStage = newResultStage(finalRDD, func, partitions, jobId, callSite)
+      stageIdToWeight.clear()
+      stageIdToWeight(finalStage.id) = 0
       setWeight(finalStage)
-      logInfo(stageIdToWeight.toString())
+      logInfo(s"MapStageIdToWeight of JobID $jobId \n $stageIdToWeight")
     } catch {
       case e: Exception =>
         logWarning("Creating new stage failed due to exception - job: " + jobId, e)
