@@ -376,7 +376,7 @@ class DAGScheduler(
      node.parents.foreach { parent =>
        val w1 = stageIdToWeight.getOrElse(node.id, 0) + 1
        val w2 = stageIdToWeight.getOrElse(parent.id, 0)
-       stageIdToWeight(node.id) = math.max(w1, w2)
+       stageIdToWeight(parent.id) = math.max(w1, w2)
        this.setWeight(parent)
     }
   }
