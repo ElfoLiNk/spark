@@ -80,8 +80,8 @@ private[spark] class TaskSchedulerImpl(
   private[scheduler] val taskIdToTaskSetManager = new HashMap[Long, TaskSetManager]
   val taskIdToExecutorId = new HashMap[Long, String]
 
-  val execIdToTaskSet = new HashMap[String,Long].withDefaultValue(0)
-  val taskSetToExecId = new HashMap[Long, List[String]].withDefaultValue(List())
+  val execIdToTaskSet = new HashMap[String, Long].withDefaultValue(0)
+  val taskSetToExecId = new HashMap[Long, Set[String]].withDefaultValue(Set())
 
   @volatile private var hasReceivedTask = false
   @volatile private var hasLaunchedTask = false
@@ -261,13 +261,13 @@ private[spark] class TaskSchedulerImpl(
             val tid = task.taskId
             taskIdToTaskSetManager(tid) = taskSet
             taskIdToExecutorId(tid) = execId
-            execIdToTaskSet(execId) = taskSet.stageId
-            taskSetToExecId(taskSet.stageId) = execId :: taskSetToExecId(taskSet.stageId)
             executorIdToTaskCount(execId) += 1
             executorsByHost(host) += execId
             availableCpus(i) -= CPUS_PER_TASK
             assert(availableCpus(i) >= 0)
             launchedTask = true
+            execIdToTaskSet(execId) = taskSet.stageId
+            taskSetToExecId(taskSet.stageId) += execId
           }
         } catch {
           case e: TaskNotSerializableException =>
