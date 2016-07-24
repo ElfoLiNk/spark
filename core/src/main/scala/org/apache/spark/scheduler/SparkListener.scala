@@ -36,6 +36,9 @@ sealed trait SparkListenerEvent
 case class SparkListenerStageSubmitted(stageInfo: StageInfo, properties: Properties = null)
   extends SparkListenerEvent
 
+case class SparkStageWeightSubmitted(
+  stageInfo: StageInfo, properties: Properties = null, weight: Long) extends SparkListenerEvent
+
 @DeveloperApi
 case class SparkListenerStageCompleted(stageInfo: StageInfo) extends SparkListenerEvent
 
@@ -92,6 +95,10 @@ case class SparkListenerUnpersistRDD(rddId: Int) extends SparkListenerEvent
 
 @DeveloperApi
 case class SparkListenerExecutorAdded(time: Long, executorId: String, executorInfo: ExecutorInfo)
+  extends SparkListenerEvent
+
+@DeveloperApi
+case class SparkListenerExecutorAssigned(executorId: String, stageId: Int)
   extends SparkListenerEvent
 
 @DeveloperApi
