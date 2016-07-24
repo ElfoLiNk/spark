@@ -253,7 +253,8 @@ private[spark] class TaskSchedulerImpl(
     for (i <- 0 until shuffledOffers.size) {
       val execId = shuffledOffers(i).executorId
       val host = shuffledOffers(i).host
-      if (availableCpus(i) >= CPUS_PER_TASK && (execIdToTaskSet(execId) == taskSet.stageId
+      val stageId = taskSet.stageId
+      if (availableCpus(i) >= CPUS_PER_TASK && (execIdToTaskSet(execId) == stageId
         || execIdToTaskSet(execId) == 0)) {
         try {
           for (task <- taskSet.resourceOffer(execId, host, maxLocality)) {
@@ -266,10 +267,10 @@ private[spark] class TaskSchedulerImpl(
             availableCpus(i) -= CPUS_PER_TASK
             assert(availableCpus(i) >= 0)
             launchedTask = true
-            if (execIdToTaskSet(execId) != taskSet.stageId) {
-              execIdToTaskSet(execId) = taskSet.stageId
-              sc.listenerBus.post(SparkListenerExecutorAssigned(execId, taskSet.stageId))
-              taskSetToExecId(taskSet.stageId) += execId
+            if (execIdToTaskSet(execId) != stageId) {
+              execIdToTaskSet(execId) = stageId
+              sc.listenerBus.post(SparkListenerExecutorAssigned(execId, stageId))
+              taskSetToExecId(stageId) += execId
             }
           }
         } catch {
