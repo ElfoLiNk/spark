@@ -266,8 +266,11 @@ private[spark] class TaskSchedulerImpl(
             availableCpus(i) -= CPUS_PER_TASK
             assert(availableCpus(i) >= 0)
             launchedTask = true
-            execIdToTaskSet(execId) = taskSet.stageId
-            taskSetToExecId(taskSet.stageId) += execId
+            if (execIdToTaskSet(execId) != taskSet.stageId) {
+              execIdToTaskSet(execId) = taskSet.stageId
+              sc.listenerBus.post(SparkListenerExecutorAssigned(execId, taskSet.stageId))
+              taskSetToExecId(taskSet.stageId) += execId
+            }
           }
         } catch {
           case e: TaskNotSerializableException =>
