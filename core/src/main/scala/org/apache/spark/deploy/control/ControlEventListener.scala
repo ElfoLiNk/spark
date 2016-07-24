@@ -180,7 +180,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     val stage = stageSubmitted.stageInfo
     val stageWeight = stageSubmitted.weight
     val jobId = stageIdToActiveJobIds.getOrElse(stage.stageId, 0)
-    val controller = new ControllerJob(deadlineJobs(jobId.asInstanceOf[Int]), ALPHA, NOMINAL_RATE)
+    val controller = new ControllerJob(
+      stage.numTasks, deadlineJobs(jobId.asInstanceOf[Int]), ALPHA, NOMINAL_RATE)
     var recordInput: Long = 0
     stage.parentIds.foreach(x => recordInput += stageIdToData(x, 0).outputRecords)
     if (firstStageId == -1) {
@@ -193,7 +194,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     val deadlineStage = controller.computeDeadlineStage(stage, stageWeight)
     stageIdToDeadline(stage.stageId) = deadlineStage
     stageIdToCore(stage.stageId) = controller.computeCoreStage(deadlineStage, stageWeight)
-
+    logInfo("Submitted stage: %s with deadline: %s and core: %s".format(
+      stage.stageId, stageIdToDeadline(stage.stageId), stageIdToCore(stage.stageId)))
 
     activeStages(stage.stageId) = stage
     pendingStages.remove(stage.stageId)
@@ -424,19 +426,22 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   }
 
 
-  override def onExecutorAssigned(executorAssigned: SparkListenerExecutorAssigned): Unit = synchronized {
-    execIdToStageId(executorAssigned.executorId) = executorAssigned.stageId
-    stageIdToExecId(executorAssigned.stageId) += executorAssigned.executorId
+  override def onExecutorAssigned(
+    executorAssigned: SparkListenerExecutorAssigned): Unit = synchronized {
+    val stageId = executorAssigned.stageId
+    execIdToStageId(executorAssigned.executorId) = stageId
+    stageIdToExecId(stageId) += executorAssigned.executorId
     logInfo("Assigned %s stage to %s executor".format(
-      executorAssigned.stageId, executorAssigned.executorId))
+      stageId, executorAssigned.executorId))
 
-    val jobId = stageIdToActiveJobIds.getOrElse(executorAssigned.stageId.toInt, 0)
-    val controller = new ControllerJob(deadlineJobs(jobId.asInstanceOf[Int]), ALPHA, NOMINAL_RATE)
+    val jobId = stageIdToActiveJobIds.getOrElse(stageId, 0)
+    val controller = new ControllerJob(
+      stageIdToInfo(stageId).numTasks, deadlineJobs(jobId.asInstanceOf[Int]), ALPHA, NOMINAL_RATE)
     controller.initControllerExecutor(
       "spark://Worker@" + executorIdToInfo(executorAssigned.executorId).executorHost + ":9999",
-      executorAssigned.executorId, executorAssigned.stageId,
-      stageIdToDeadline(executorAssigned.stageId),
-      stageIdToCore(executorAssigned.stageId))
+      executorAssigned.executorId, stageId,
+      stageIdToDeadline(stageId),
+      stageIdToCore(stageId))
 
   }
 }

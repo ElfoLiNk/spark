@@ -22,12 +22,16 @@ import org.apache.spark.rpc.{RpcAddress, RpcEnv, ThreadSafeRpcEndpoint}
 import org.apache.spark.scheduler.StageInfo
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{InitControllerExecutor, NeededCore}
 
-class ControllerJob(deadlineJob: Long, alpha: Double, nominalRate: Double) {
+class ControllerJob(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: Double) {
 
   val alphaDeadline: Long = (alpha * deadlineJob.toDouble).toLong
   val memForCore: Long = 2048000
-  val coreForExecutor: Int = 8
+  val coreForVM: Int = 8
   val numMaxExecutor: Int = 4
+
+  var numExecutor = 0
+  var coreForExecutor = new scala.collection.mutable.HashMap[Int, Int]
+
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
@@ -35,6 +39,8 @@ class ControllerJob(deadlineJob: Long, alpha: Double, nominalRate: Double) {
   val controllerEndpoint = rpcEnv.setupEndpoint("ControllJob",
     new ControllerJob(rpcEnv, "ControllEnv", "ControllJob", conf, securityMgr))
   rpcEnv.awaitTermination()
+
+
 
   def computeDeadlineStage(stage: StageInfo, weight: Long): Long = {
     alphaDeadline - stage.submissionTime.getOrElse(0).asInstanceOf[Long] / weight
@@ -55,9 +61,28 @@ class ControllerJob(deadlineJob: Long, alpha: Double, nominalRate: Double) {
     math.ceil(totalSize * 10 / memForCore).toInt
   }
 
-  def computeNumExecutor(coreNeeded: Int): Int = {
-    math.ceil(coreNeeded / coreForExecutor).toInt
+  def computeNumExecutorAndTaskToEach(coresToBeAllocated: Int): Unit = {
+    numExecutor = math.ceil(coresToBeAllocated.toDouble / coreForVM.toDouble).toInt
+
+    val coresPerExecutor = (1 to numExecutor).map {
+      i => if (coresToBeAllocated % numExecutor >= i) {
+        1 + (coresToBeAllocated / numExecutor)
+      } else (coresToBeAllocated / numExecutor)
+    }
+
+    val taskPerExecutor = scala.collection.mutable.IndexedSeq((0 to numExecutor - 1).map {
+      tasks * coresPerExecutor(_) / coresToBeAllocated
+    }: _*)
+
+    val remainingTasks = tasks - taskPerExecutor.sum
+
+    (0 to remainingTasks - 1).foreach { i =>
+      taskPerExecutor(i % numExecutor) = taskPerExecutor(i % numExecutor) + 1
+    }
+
+    taskPerExecutor
   }
+
 
   def initControllerExecutor(
         workerUrl: String, executorId: String, stageId: Long, deadline: Long, core: Int): Unit = {
@@ -67,7 +92,8 @@ class ControllerJob(deadlineJob: Long, alpha: Double, nominalRate: Double) {
 
   def askMasterNeededCore(
        masterUrl: String, stageId: Long, coreNeeded: Int, driverUrl: String): Unit = {
-       val masterEndpoint = rpcEnv.setupEndpointRefByURI(masterUrl)
+       val masterEndpoint = rpcEnv.setupEndpointRef(
+         "Master", RpcAddress.fromSparkURL(masterUrl), "Master")
        masterEndpoint.send(NeededCore(stageId, coreNeeded, driverUrl))
 
   }
