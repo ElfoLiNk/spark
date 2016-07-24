@@ -82,4 +82,6 @@ public class JavaSparkListener implements SparkListener {
   @Override
   public void onBlockUpdated(SparkListenerBlockUpdated blockUpdated) { }
 
+  @Override
+  public void onExecutorAssigned(SparkListenerExecutorAssigned executorAssigned) { }
 }
