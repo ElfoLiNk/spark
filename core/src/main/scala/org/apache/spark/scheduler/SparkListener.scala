@@ -21,7 +21,6 @@ import java.util.Properties
 
 import scala.collection.Map
 import scala.collection.mutable
-
 import org.apache.spark.{Logging, TaskEndReason}
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.executor.TaskMetrics
@@ -230,6 +229,9 @@ trait SparkListener {
    * Called when the driver receives a block update info.
    */
   def onBlockUpdated(blockUpdated: SparkListenerBlockUpdated) { }
+
+  def onExecutorAssigned
+  (sparkListenerExecutorAssigned: SparkListenerExecutorAssigned) { }
 }
 
 /**
