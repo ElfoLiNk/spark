@@ -12,15 +12,15 @@ import scala.util.{Failure, Success}
 /**
   * Created by Matteo on 21/07/2016.
   */
-class ControllerProxy(val driverUrl: String) {
+class ControllerProxy(rpcEnv: RpcEnv, val driverUrl: String) {
 
   var proxyEndpoint: RpcEndpointRef = null
   val ENDPOINT_NAME: String = "ControllerProxy-%s".format(driverUrl.split(":").last)
   val executorTasksMax = new HashMap[String, Long]
 
-  val conf = new SparkConf
-  val securityMgr = new SecurityManager(conf)
-  val rpcEnv = RpcEnv.create("Controller", "localhost", 5555, conf, securityMgr)
+  // val conf = new SparkConf
+  // val securityMgr = new SecurityManager(conf)
+  // val rpcEnv = RpcEnv.create("Controller", "localhost", 5555, conf, securityMgr)
 
   def start() {
     proxyEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME, createProxyEndpoint(driverUrl))
@@ -70,11 +70,12 @@ class ControllerProxy(val driverUrl: String) {
         rpcEnv.asyncSetupEndpointRefByURI(driverUrl).flatMap { ref =>
           // This is a very fast action so we can use "ThreadUtils.sameThread"
           driver = Some(ref)
-          logInfo(context.senderAddress.hostPort)
+          logInfo(rpcEnv.address.host)
           ref.ask[RegisterExecutorResponse](
             RegisterExecutor(executorId,
               rpcEnv.setupEndpointRefByURI(
-                "spark://CoarseGrainedExecutorBackend@" + context.senderAddress.hostPort),
+                "spark://CoarseGrainedExecutorBackend@" +
+                  rpcEnv.address.host + ":" + context.senderAddress.port),
               hostPort, cores, logUrls))
         }(ThreadUtils.sameThread).onComplete {
           // This is a very fast action so we can use "ThreadUtils.sameThread"
