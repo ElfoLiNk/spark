@@ -55,6 +55,8 @@ class ControllerJob
   }
 
   def computeCoreStage(deadlineStage: Long, numRecord: Long): Int = {
+    logInfo("NumRecords: " + numRecord.toString +
+      "DeadlineStage : " + deadlineStage.toString + " NominalRate: " + nominalRate.toString)
     math.ceil(numRecord / deadlineStage / nominalRate).toInt
   }
 
@@ -69,6 +71,7 @@ class ControllerJob
     val totalSize = stage.rddInfos.foldLeft(0L) {
       (acc, rdd) => acc + rdd.memSize + rdd.diskSize + rdd.externalBlockStoreSize
     }
+    logInfo("Size First Stage: " + totalSize.toString)
     math.ceil(totalSize * 10 / memForCore).toInt
   }
 

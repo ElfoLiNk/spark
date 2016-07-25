@@ -18,7 +18,6 @@
 package org.apache.spark.deploy.control
 
 import org.apache.spark._
-import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.executor.TaskMetrics
 import org.apache.spark.scheduler.cluster.ExecutorInfo
 import org.apache.spark.scheduler.{SparkStageWeightSubmitted, _}
@@ -145,7 +144,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     }
     firstStageId = -1
     controllerJob(jobEnd.jobId).stop()
-    controllerJob(jobEnd.jobId) = null
   }
 
   override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = synchronized {
@@ -197,7 +195,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         stage.numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
       stageIdToDeadline(stage.stageId) = controller.computeDeadlineFirstStage(stage, stageWeight)
       stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
-      controller.askMasterNeededCore(master, firstStageId, stageIdToCore(firstStageId), appid)
+      controller.askMasterNeededCore(
+        master, firstStageId, stageIdToCore(firstStageId), appid)
       jobIdToController(jobId.head) = controller
     }
 
