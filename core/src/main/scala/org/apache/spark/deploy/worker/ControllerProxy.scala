@@ -60,6 +60,9 @@ class ControllerProxy(val driverUrl: String) {
 
       case RegisterExecutorFailed(message) =>
         executorRefMap(message.split(" ").last).send(RegisterExecutorFailed(message))
+
+      case RetrieveSparkProps =>
+        driver.get.send(RetrieveSparkProps)
     }
 
     override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
