@@ -186,22 +186,22 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     val stageWeight = stageSubmitted.weight
     val jobId = stageIdToActiveJobIds(stage.stageId)
 
-    var recordInput: Long = 0
-    stage.parentIds.foreach(x => recordInput += stageIdToData(x, 0).outputRecords)
+
     if (firstStageId == -1) {
       firstStageId = stage.stageId
       val controller = new ControllerJob(
         stage.numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
       stageIdToDeadline(stage.stageId) = controller.computeDeadlineFirstStage(stage, stageWeight)
       stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
-      controller.askMasterNeededCore("", firstStageId, stageIdToCore(firstStageId), "")
+      controller.askMasterNeededCore(firstStageId, stageIdToCore(firstStageId), "spark://CoarseGrained")
       jobIdToController(jobId.head) = controller
     }
 
     val controller = jobIdToController(jobId.head)
     val deadlineStage = controller.computeDeadlineStage(stage, stageWeight)
     stageIdToDeadline(stage.stageId) = deadlineStage
-    stageIdToCore(stage.stageId) = controller.computeCoreStage(deadlineStage, stageWeight)
+    stageIdToCore(stage.stageId) = controller.computeCoreStage(deadlineStage,
+    stage.parentIds.foldLeft(0L) {(agg, x) => agg + stageIdToData(x, 0).outputRecords })
     logInfo("Submitted stage: %s with deadline: %s and core: %s".format(
       stage.stageId, stageIdToDeadline(stage.stageId), stageIdToCore(stage.stageId)))
 
