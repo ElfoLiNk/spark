@@ -42,6 +42,9 @@ class ControllerJob
   // rpcEnv.awaitTermination()
 
 
+  def stop(): Unit ={
+    rpcEnv.stop(controllerEndpoint)
+  }
 
   def computeDeadlineStage(stage: StageInfo, weight: Long): Long = {
     if (weight != 0) {
