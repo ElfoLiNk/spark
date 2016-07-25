@@ -139,6 +139,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         }
       }
     }
+    firstStageId = -1
   }
 
   override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = synchronized {
@@ -432,7 +433,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
 
 
   override def onExecutorAssigned(
-                                   executorAssigned: SparkListenerExecutorAssigned): Unit = synchronized {
+      executorAssigned: SparkListenerExecutorAssigned): Unit = synchronized {
     val stageId = executorAssigned.stageId
     execIdToStageId(executorAssigned.executorId) = stageId
     stageIdToExecId(stageId) += executorAssigned.executorId
