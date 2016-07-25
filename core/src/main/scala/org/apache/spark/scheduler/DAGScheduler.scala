@@ -994,8 +994,6 @@ class DAGScheduler(
       case NonFatal(e) =>
         stage.makeNewStageAttempt(partitionsToCompute.size)
         listenerBus.post(SparkListenerStageSubmitted(stage.latestInfo, properties))
-        listenerBus.post(
-          SparkStageWeightSubmitted(stage.latestInfo, properties, stageIdToWeight(stage.id)))
         abortStage(stage, s"Task creation failed: $e\n${e.getStackTraceString}", Some(e))
         runningStages -= stage
         return
@@ -1003,8 +1001,6 @@ class DAGScheduler(
 
     stage.makeNewStageAttempt(partitionsToCompute.size, taskIdToLocations.values.toSeq)
     listenerBus.post(SparkListenerStageSubmitted(stage.latestInfo, properties))
-    listenerBus.post(
-      SparkStageWeightSubmitted(stage.latestInfo, properties, stageIdToWeight(stage.id)))
 
     // TODO: Maybe we can keep the taskBinary in Stage to avoid serializing it multiple times.
     // Broadcasted binary for the task, used to dispatch tasks to executors. Note that we broadcast
@@ -1072,6 +1068,8 @@ class DAGScheduler(
       taskScheduler.submitTasks(new TaskSet(
         tasks.toArray, stage.id, stage.latestInfo.attemptId, jobId, properties))
       stage.latestInfo.submissionTime = Some(clock.getTimeMillis())
+      listenerBus.post(
+        SparkStageWeightSubmitted(stage.latestInfo, properties, stageIdToWeight(stage.id)))
     } else {
       // Because we posted SparkListenerStageSubmitted earlier, we should mark
       // the stage as completed here in case there are no tasks to run
