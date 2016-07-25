@@ -120,6 +120,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
 
   override def onJobEnd(jobEnd: SparkListenerJobEnd): Unit = synchronized {
     firstStageId = -1
+    logInfo(controllerJob.toString)
     controllerJob(jobEnd.jobId).stop()
     val jobData = activeJobs.remove(jobEnd.jobId).getOrElse {
       logWarning(s"Job completed for unknown job ${jobEnd.jobId}")
@@ -144,7 +145,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         }
       }
     }
-    logInfo(controllerJob.toString)
   }
 
   override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = synchronized {
@@ -340,6 +340,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
                               execId: String,
                               taskMetrics: TaskMetrics,
                               oldMetrics: Option[TaskMetrics]) {
+    logInfo("UPDATING METRICS")
     val execSummary = stageData.executorSummary.getOrElseUpdate(execId, new ExecutorSummary)
 
     val shuffleWriteDelta =
