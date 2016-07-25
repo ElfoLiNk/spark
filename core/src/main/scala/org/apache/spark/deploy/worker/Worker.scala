@@ -461,18 +461,20 @@ private[deploy] class Worker(
 
           var unwanted: List[Int] = List()
           coresAllocated.values.foreach(list => unwanted = unwanted ++ list)
-          val available = (0 to cores - 1).toList.filterNot(unwanted.toSet)
+          val available = (0 until cores).toList.filterNot(unwanted.toSet)
           val cpuset = available.take(cores_).mkString(",")
           coresAllocated += (appId + "/" + execId -> available.take(cores_))
 
           val driverUrl = appDesc.command.arguments(1)
           if (!driverUrlToProxy.contains(driverUrl)) {
+            logInfo("CREATING PROXY FOR DRIVER: " + driverUrl)
             val controllerProxy = new ControllerProxy(rpcEnv, driverUrl)
             controllerProxy.start()
             driverUrlToProxy(driverUrl) = controllerProxy
           }
           // scalastyle:off line.size.limit
           val appDescProxed = appDesc.copy(command = Worker.changeDriverToProxy(appDesc.command, driverUrlToProxy(driverUrl).getAddress))
+          logInfo(appDescProxed.command.toString)
           val manager = new ExecutorRunner(
             appId,
             execId,
