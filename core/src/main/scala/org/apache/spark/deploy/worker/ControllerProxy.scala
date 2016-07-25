@@ -72,7 +72,8 @@ class ControllerProxy(val driverUrl: String) {
           driver = Some(ref)
           ref.ask[RegisterExecutorResponse](
             RegisterExecutor(executorId,
-              rpcEnv.setupEndpointRefByURI(context.senderAddress.toSparkURL),
+              rpcEnv.setupEndpointRefByURI(
+                "spark://CoarseGrainedExecutorBackend@" + context.senderAddress.hostPort),
               hostPort, cores, logUrls))
         }(ThreadUtils.sameThread).onComplete {
           // This is a very fast action so we can use "ThreadUtils.sameThread"
