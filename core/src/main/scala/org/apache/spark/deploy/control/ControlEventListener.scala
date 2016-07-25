@@ -434,9 +434,9 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     logInfo("Assigned %s stage to %s executor".format(
       stageId, executorAssigned.executorId))
 
-    val jobId = stageIdToActiveJobIds.getOrElse(stageId, 0)
+    val jobId = stageIdToActiveJobIds(stageId)
     val controller = new ControllerJob(
-      stageIdToInfo(stageId).numTasks, deadlineJobs(jobId.asInstanceOf[Int]), ALPHA, NOMINAL_RATE)
+      stageIdToInfo(stageId).numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
     controller.initControllerExecutor(
       "spark://Worker@" + executorIdToInfo(executorAssigned.executorId).executorHost + ":9999",
       executorAssigned.executorId, stageId,
