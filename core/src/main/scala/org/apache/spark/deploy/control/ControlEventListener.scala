@@ -176,12 +176,13 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     }
   }
 
-  override def onStageWeightSubmitted(stageSubmitted: SparkStageWeightSubmitted): Unit = synchronized {
+  override def onStageWeightSubmitted
+  (stageSubmitted: SparkStageWeightSubmitted): Unit = synchronized {
     val stage = stageSubmitted.stageInfo
     val stageWeight = stageSubmitted.weight
-    val jobId = stageIdToActiveJobIds.getOrElse(stage.stageId, 0)
+    val jobId = stageIdToActiveJobIds(stage.stageId)
     val controller = new ControllerJob(
-      stage.numTasks, deadlineJobs(jobId.asInstanceOf[Int]), ALPHA, NOMINAL_RATE)
+      stage.numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
     var recordInput: Long = 0
     stage.parentIds.foreach(x => recordInput += stageIdToData(x, 0).outputRecords)
     if (firstStageId == -1) {
