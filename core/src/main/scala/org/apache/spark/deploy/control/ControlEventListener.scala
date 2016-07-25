@@ -43,7 +43,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
 
   val DEADLINE: Int = 1000
   val ALPHA: Double = 0.8
-  val NOMINAL_RATE: Double = 10000.0
+  val NOMINAL_RATE: Double = 1000.0
 
   // Master
   def master: String = conf.get("spark.master")
@@ -76,9 +76,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   var execIdToStageId = new HashMap[String, Long].withDefaultValue(0)
   var stageIdToExecId = new HashMap[Long, Set[String]].withDefaultValue(Set())
   var executorIdToInfo = new HashMap[String, ExecutorInfo]
-
-  // Controller
-  var controllerJob = new HashMap[Int, ControllerJob]()
 
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = synchronized {
     val jobGroup = for (
@@ -119,9 +116,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   }
 
   override def onJobEnd(jobEnd: SparkListenerJobEnd): Unit = synchronized {
-    firstStageId = -1
-    logInfo(controllerJob.toString)
-    controllerJob(jobEnd.jobId).stop()
     val jobData = activeJobs.remove(jobEnd.jobId).getOrElse {
       logWarning(s"Job completed for unknown job ${jobEnd.jobId}")
       new JobUIData(jobId = jobEnd.jobId)
@@ -145,6 +139,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         }
       }
     }
+    firstStageId = -1
+    jobIdToController(jobEnd.jobId).stop()
   }
 
   override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = synchronized {
