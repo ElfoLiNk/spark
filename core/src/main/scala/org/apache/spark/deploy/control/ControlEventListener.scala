@@ -193,7 +193,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       val controller = new ControllerJob(
         stage.numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
       stageIdToDeadline(stage.stageId) = controller.computeDeadlineFirstStage(stage, stageWeight)
-      stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
+      stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(completedStages.toList.head)
       controller.askMasterNeededCore(
         master, firstStageId, stageIdToCore(firstStageId), appid)
       jobIdToController(jobId.head) = controller
