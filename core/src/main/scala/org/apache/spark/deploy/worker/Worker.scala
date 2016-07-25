@@ -21,7 +21,7 @@ import sys.process._
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
-import java.util.{UUID, Date}
+import java.util.{Date, UUID}
 import java.util.concurrent._
 import java.util.concurrent.{Future => JFuture, ScheduledFuture => JScheduledFuture}
 
@@ -29,7 +29,6 @@ import scala.collection.mutable.{HashMap, HashSet, LinkedHashMap}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Random, Success}
 import scala.util.control.NonFatal
-
 import org.apache.spark.{Logging, SecurityManager, SparkConf}
 import org.apache.spark.deploy.{Command, ExecutorDescription, ExecutorState}
 import org.apache.spark.deploy.DeployMessages._
@@ -38,7 +37,8 @@ import org.apache.spark.deploy.master.{DriverState, Master}
 import org.apache.spark.deploy.worker.ui.WorkerWebUI
 import org.apache.spark.metrics.MetricsSystem
 import org.apache.spark.rpc._
-import org.apache.spark.util.{ThreadUtils, SignalLogger, Utils}
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.InitControllerExecutor
+import org.apache.spark.util.{SignalLogger, ThreadUtils, Utils}
 
 private[deploy] class Worker(
     override val rpcEnv: RpcEnv,
@@ -121,6 +121,10 @@ private[deploy] class Worker(
   val finishedDrivers = new LinkedHashMap[String, DriverRunner]
   val appDirectories = new HashMap[String, Seq[String]]
   val finishedApps = new HashSet[String]
+
+  val driverUrlToProxy = new HashMap[String, ControllerProxy]
+
+  val executorIdToController = new HashMap[String, ControllerExecutor]
 
   val retainedExecutors = conf.getInt("spark.worker.ui.retainedExecutors",
     WorkerWebUI.DEFAULT_RETAINED_EXECUTORS)
@@ -460,10 +464,19 @@ private[deploy] class Worker(
           val available = (0 to cores - 1).toList.filterNot(unwanted.toSet)
           val cpuset = available.take(cores_).mkString(",")
           coresAllocated += (appId + "/" + execId -> available.take(cores_))
+
+          val driverUrl = appDesc.command.arguments(1)
+          if (!driverUrlToProxy.contains(driverUrl)) {
+            val controllerProxy = new ControllerProxy(rpcEnv, driverUrl)
+            controllerProxy.start()
+            driverUrlToProxy(driverUrl) = controllerProxy
+          }
+          // scalastyle:off line.size.limit
+          val appDescProxed = appDesc.copy(command = Worker.changeDriverToProxy(appDesc.command, driverUrlToProxy(driverUrl).getAddress))
           val manager = new ExecutorRunner(
             appId,
             execId,
-            appDesc.copy(command = Worker.maybeUpdateSSLSettings(appDesc.command, conf)),
+            appDescProxed.copy(command = Worker.maybeUpdateSSLSettings(appDescProxed.command, conf)),
             cores_,
             memory_,
             cpuset,
@@ -482,6 +495,7 @@ private[deploy] class Worker(
           coresUsed += cores_
           memoryUsed += memory_
           sendToMaster(ExecutorStateChanged(appId, execId, manager.state, None, None))
+          // scalastyle:on line.size.limit
         } catch {
           case e: Exception => {
             logError(s"Failed to launch executor $appId/$execId for ${appDesc.name}.", e)
@@ -586,6 +600,12 @@ private[deploy] class Worker(
     case ApplicationFinished(id) =>
       finishedApps += id
       maybeCleanupApplication(id)
+
+    case InitControllerExecutor(executorId, stageId, tasks, deadline, core) =>
+        executorIdToController(executorId) = new ControllerExecutor(deadline, 1, 8, tasks, core)
+        logInfo("Created ControllerExecutor: %s , %d , %d , %d , %d".format
+        (executorId, stageId, deadline, tasks, core))
+
   }
 
   override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
@@ -781,5 +801,9 @@ private[deploy] object Worker extends Logging {
     } else {
       cmd
     }
+  }
+
+  def changeDriverToProxy(cmd: Command, proxyUrl: String): Command = {
+      cmd.copy(arguments = cmd.arguments.updated(1, proxyUrl))
   }
 }
