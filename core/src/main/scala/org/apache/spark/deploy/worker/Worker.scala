@@ -471,6 +471,7 @@ private[deploy] class Worker(
             val controllerProxy = new ControllerProxy(rpcEnv, driverUrl)
             controllerProxy.start()
             driverUrlToProxy(driverUrl) = controllerProxy
+            logInfo("PROXY ADDRESS:" + controllerProxy.getAddress)
           }
           // scalastyle:off line.size.limit
           val appDescProxed = appDesc.copy(command = Worker.changeDriverToProxy(appDesc.command, driverUrlToProxy(driverUrl).getAddress))
