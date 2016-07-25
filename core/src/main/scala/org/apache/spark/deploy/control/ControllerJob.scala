@@ -17,6 +17,7 @@
 
 package org.apache.spark.deploy.control
 
+import org.apache.spark.deploy.master.Master
 import org.apache.spark.{Logging, SecurityManager, SparkConf}
 import org.apache.spark.rpc.{RpcAddress, RpcEnv, ThreadSafeRpcEndpoint}
 import org.apache.spark.scheduler.StageInfo
@@ -102,10 +103,11 @@ class ControllerJob
     (executorId, stageId, tasks, deadline, core))
   }
 
-  def askMasterNeededCore(stageId: Long, coreNeeded: Int, driverUrl: String): Unit = {
-    val driverEndpoint = rpcEnv.setupEndpointRef(
-      "Driver", RpcAddress.fromSparkURL(driverUrl), "Driver")
-    driverEndpoint.send(NeededCore(stageId, coreNeeded, driverUrl))
+  def askMasterNeededCore
+  (masterUrl: String, stageId: Long, coreNeeded: Int, appname: String): Unit = {
+    val masterRef = rpcEnv.setupEndpointRef(
+      Master.SYSTEM_NAME, RpcAddress.fromSparkURL(masterUrl), Master.ENDPOINT_NAME)
+    masterRef.send(NeededCore(stageId, coreNeeded, appname))
 
   }
 

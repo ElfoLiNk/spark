@@ -46,6 +46,10 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   val ALPHA: Double = 0.8
   val NOMINAL_RATE: Double = 10000.0
 
+  // Master
+  def master: String = conf.get("spark.master")
+  def appid: String = conf.get("spark.app.name")
+
   // Jobs:
   val activeJobs = new HashMap[Int, JobUIData]
   val jobIdToData = new HashMap[Int, JobUIData]
@@ -193,7 +197,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         stage.numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
       stageIdToDeadline(stage.stageId) = controller.computeDeadlineFirstStage(stage, stageWeight)
       stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
-      controller.askMasterNeededCore(firstStageId, stageIdToCore(firstStageId), "spark://CoarseGrained")
+      controller.askMasterNeededCore(master, firstStageId, stageIdToCore(firstStageId), appid)
       jobIdToController(jobId.head) = controller
     }
 
