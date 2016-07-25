@@ -22,7 +22,8 @@ import org.apache.spark.rpc.{RpcAddress, RpcEnv, ThreadSafeRpcEndpoint}
 import org.apache.spark.scheduler.StageInfo
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{InitControllerExecutor, NeededCore}
 
-class ControllerJob(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: Double) {
+class ControllerJob
+    (tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: Double) extends Logging {
 
   val alphaDeadline: Long = (alpha * deadlineJob.toDouble).toLong
   val memForCore: Long = 2048000
@@ -38,7 +39,7 @@ class ControllerJob(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: D
   val rpcEnv = RpcEnv.create("ControllEnv", "localhost", 6666, conf, securityMgr)
   val controllerEndpoint = rpcEnv.setupEndpoint("ControllJob",
     new ControllerJob(rpcEnv, "ControllEnv", "ControllJob", conf, securityMgr))
-  //rpcEnv.awaitTermination()
+  // rpcEnv.awaitTermination()
 
 
 
@@ -94,6 +95,8 @@ class ControllerJob(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: D
         workerUrl: String, executorId: String, stageId: Long, deadline: Long, core: Int): Unit = {
         val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
         workerEndpoint.send(InitControllerExecutor(executorId, stageId, tasks, deadline, core))
+        logInfo("SEND INIT TO EXECUTOR CONTROLLER %s, %s, %s, %s, %s".format
+        (executorId, stageId, tasks, deadline, core))
   }
 
   def askMasterNeededCore(
