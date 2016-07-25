@@ -229,7 +229,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       // If a stage retries again, it should be removed from completedStageIndices set
       jobData.completedStageIndices.remove(stage.stageId)
     }
-
+    logInfo(stageIdToDeadline.toString)
+    logInfo(stageIdToCore.toString)
   }
 
   override def onTaskStart(taskStart: SparkListenerTaskStart): Unit = synchronized {
@@ -451,5 +452,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       stageIdToDeadline(stageId),
       stageIdToCore(stageId))
 
+    logInfo(stageIdToDeadline.toString)
+    logInfo(stageIdToCore.toString)
   }
 }
