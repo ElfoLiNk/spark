@@ -71,7 +71,7 @@ class ControllerJob
     val totalSize = stage.rddInfos.foldLeft(0L) {
       (acc, rdd) => acc + rdd.memSize + rdd.diskSize + rdd.externalBlockStoreSize
     }
-    logInfo("Size First Stage: " + totalSize.toString)
+    logInfo("TotalSize RDD First Stage: " + totalSize.toString)
     math.ceil(totalSize * 10 / memForCore).toInt
   }
 
