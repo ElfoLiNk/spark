@@ -43,7 +43,10 @@ class ControllerJob(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: D
 
 
   def computeDeadlineStage(stage: StageInfo, weight: Long): Long = {
-    alphaDeadline - stage.submissionTime.get / weight
+    if (weight != 0) {
+      (alphaDeadline - stage.submissionTime.get ) / weight
+    }
+    alphaDeadline
   }
 
   def computeCoreStage(deadlineStage: Long, numRecord: Long): Int = {
@@ -51,7 +54,10 @@ class ControllerJob(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: D
   }
 
   def computeDeadlineFirstStage(stage: StageInfo, weight: Long): Long = {
-    alphaDeadline - stage.submissionTime.get / weight
+    if (weight != 0) {
+    (alphaDeadline - stage.submissionTime.get ) / weight
+    }
+    alphaDeadline
   }
 
   def computeCoreFirstStage(stage: StageInfo): Int = {
