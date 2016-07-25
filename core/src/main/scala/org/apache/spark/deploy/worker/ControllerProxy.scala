@@ -43,7 +43,7 @@ class ControllerProxy(val driverUrl: String) {
 
     private val executorRefMap = new HashMap[String, RpcEndpointRef]
 
-    @volatile var driver: Option[RpcEndpointRef] = None
+    @volatile var driver: Option[RpcEndpointRef] = Some(rpcEnv.setupEndpointRefByURI(driverUrl))
 
     override def receive: PartialFunction[Any, Unit] = {
       case StatusUpdate(executorId, taskId, state, data) =>
