@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 class ControllerProxy(val driverUrl: String) {
 
   var proxyEndpoint: RpcEndpointRef = null
-  val ENDPOINT_NAME: String = "ControllerProxy-%s".format(driverUrl)
+  val ENDPOINT_NAME: String = "ControllerProxy-%s".format(driverUrl.split(":").last)
   val executorTasksMax = new HashMap[String, Long]
 
   val conf = new SparkConf
