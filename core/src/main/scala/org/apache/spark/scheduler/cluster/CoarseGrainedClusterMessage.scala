@@ -31,7 +31,8 @@ private[spark] object CoarseGrainedClusterMessages {
   case object RetrieveSparkProps extends CoarseGrainedClusterMessage
 
   // ControllerJob to ControllerExecutor (Worker)
-  case class InitControllerExecutor(executorId: String, stageId: Long, deadline: Long, core: Int)
+  case class InitControllerExecutor
+  (executorId: String, stageId: Long, tasks: Int, deadline: Long, core: Int)
     extends CoarseGrainedClusterMessage
 
   // ControllerJob to ControllerExecutor (Master)

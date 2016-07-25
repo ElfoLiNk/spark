@@ -38,7 +38,7 @@ class ControllerJob(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: D
   val rpcEnv = RpcEnv.create("ControllEnv", "localhost", 6666, conf, securityMgr)
   val controllerEndpoint = rpcEnv.setupEndpoint("ControllJob",
     new ControllerJob(rpcEnv, "ControllEnv", "ControllJob", conf, securityMgr))
-  rpcEnv.awaitTermination()
+  //rpcEnv.awaitTermination()
 
 
 
@@ -67,16 +67,16 @@ class ControllerJob(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: D
     val coresPerExecutor = (1 to numExecutor).map {
       i => if (coresToBeAllocated % numExecutor >= i) {
         1 + (coresToBeAllocated / numExecutor)
-      } else (coresToBeAllocated / numExecutor)
+      } else coresToBeAllocated / numExecutor
     }
 
-    val taskPerExecutor = scala.collection.mutable.IndexedSeq((0 to numExecutor - 1).map {
+    val taskPerExecutor = scala.collection.mutable.IndexedSeq((0 until numExecutor).map {
       tasks * coresPerExecutor(_) / coresToBeAllocated
     }: _*)
 
     val remainingTasks = tasks - taskPerExecutor.sum
 
-    (0 to remainingTasks - 1).foreach { i =>
+    (0 until remainingTasks).foreach { i =>
       taskPerExecutor(i % numExecutor) = taskPerExecutor(i % numExecutor) + 1
     }
 
@@ -87,7 +87,7 @@ class ControllerJob(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: D
   def initControllerExecutor(
         workerUrl: String, executorId: String, stageId: Long, deadline: Long, core: Int): Unit = {
         val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
-        workerEndpoint.send(InitControllerExecutor(executorId, stageId, deadline, core))
+        workerEndpoint.send(InitControllerExecutor(executorId, stageId, tasks, deadline, core))
   }
 
   def askMasterNeededCore(
