@@ -51,6 +51,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   val jobIdToData = new HashMap[Int, JobUIData]
 
   val deadlineJobs = new HashMap[Int, Long]
+  val jobIdToController = new HashMap[Int, ControllerJob]
 
   // Stages:
   val pendingStages = new HashMap[Int, StageInfo]
@@ -181,17 +182,20 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     val stage = stageSubmitted.stageInfo
     val stageWeight = stageSubmitted.weight
     val jobId = stageIdToActiveJobIds(stage.stageId)
-    val controller = new ControllerJob(
-      stage.numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
+
     var recordInput: Long = 0
     stage.parentIds.foreach(x => recordInput += stageIdToData(x, 0).outputRecords)
     if (firstStageId == -1) {
       firstStageId = stage.stageId
+      val controller = new ControllerJob(
+        stage.numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
       stageIdToDeadline(stage.stageId) = controller.computeDeadlineFirstStage(stage, stageWeight)
       stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
       controller.askMasterNeededCore("", firstStageId, stageIdToCore(firstStageId), "")
+      jobIdToController(jobId.head) = controller
     }
 
+    val controller = jobIdToController(jobId.head)
     val deadlineStage = controller.computeDeadlineStage(stage, stageWeight)
     stageIdToDeadline(stage.stageId) = deadlineStage
     stageIdToCore(stage.stageId) = controller.computeCoreStage(deadlineStage, stageWeight)
@@ -428,7 +432,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
 
 
   override def onExecutorAssigned(
-    executorAssigned: SparkListenerExecutorAssigned): Unit = synchronized {
+                                   executorAssigned: SparkListenerExecutorAssigned): Unit = synchronized {
     val stageId = executorAssigned.stageId
     execIdToStageId(executorAssigned.executorId) = stageId
     stageIdToExecId(stageId) += executorAssigned.executorId
