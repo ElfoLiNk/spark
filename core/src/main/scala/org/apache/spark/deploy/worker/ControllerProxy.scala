@@ -32,7 +32,7 @@ class ControllerProxy(val driverUrl: String) {
   }
 
   def getAddress: String = {
-    proxyEndpoint.address.toSparkURL
+    "spark://" + ENDPOINT_NAME + "@" + proxyEndpoint.address.toString
   }
 
 
