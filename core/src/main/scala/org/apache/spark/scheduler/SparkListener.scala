@@ -232,6 +232,9 @@ trait SparkListener {
 
   def onExecutorAssigned
   (sparkListenerExecutorAssigned: SparkListenerExecutorAssigned) { }
+
+  def onStageWeightSubmitted
+  (stageWeightSubmitted: SparkStageWeightSubmitted) {}
 }
 
 /**

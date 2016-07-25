@@ -176,7 +176,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     }
   }
 
-  def onStageSubmitted(stageSubmitted: SparkStageWeightSubmitted): Unit = synchronized {
+  override def onStageWeightSubmitted(stageSubmitted: SparkStageWeightSubmitted): Unit = synchronized {
     val stage = stageSubmitted.stageInfo
     val stageWeight = stageSubmitted.weight
     val jobId = stageIdToActiveJobIds.getOrElse(stage.stageId, 0)
