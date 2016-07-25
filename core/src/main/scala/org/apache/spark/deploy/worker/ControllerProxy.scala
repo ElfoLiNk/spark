@@ -12,13 +12,16 @@ import scala.util.{Failure, Success}
 /**
   * Created by Matteo on 21/07/2016.
   */
-class ControllerProxy(val rpcEnv: RpcEnv, val driverUrl: String) {
+class ControllerProxy(val driverUrl: String) {
 
   var proxyEndpoint: RpcEndpointRef = null
   val ENDPOINT_NAME: String = "ControllerProxy-%s".format(driverUrl)
   val executorTasksMax = new HashMap[String, Long]
 
   def start() {
+    val conf = new SparkConf
+    val securityMgr = new SecurityManager(conf)
+    val rpcEnv = RpcEnv.create("Controller", "localhost", 5555, conf, securityMgr)
     proxyEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME, createProxyEndpoint(driverUrl))
     // rpcEnv.awaitTermination()
   }
