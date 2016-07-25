@@ -76,7 +76,7 @@ class ControllerJob
     math.ceil(totalSize * 30 / memForCore).toInt
   }
 
-  def computeNumExecutorAndTaskToEach(coresToBeAllocated: Int): Unit = {
+  def computeTaskForExecutors(coresToBeAllocated: Int): IndexedSeq[Int] = {
     numExecutor = math.ceil(coresToBeAllocated.toDouble / coreForVM.toDouble).toInt
 
     val coresPerExecutor = (1 to numExecutor).map {
@@ -85,17 +85,42 @@ class ControllerJob
       } else coresToBeAllocated / numExecutor
     }
 
-    val taskPerExecutor = scala.collection.mutable.IndexedSeq((0 until numExecutor).map {
-      tasks * coresPerExecutor(_) / coresToBeAllocated
-    }: _*)
-
-    val remainingTasks = tasks - taskPerExecutor.sum
-
-    (0 until remainingTasks).foreach { i =>
-      taskPerExecutor(i % numExecutor) = taskPerExecutor(i % numExecutor) + 1
+    val remainingTasks = tasks - coresPerExecutor.foldLeft(0){
+      (agg, x) => tasks * x / coresToBeAllocated + agg
     }
 
+    val taskPerExecutor = (0 until numExecutor).map { i =>
+      if (i < remainingTasks) {
+        tasks * coresPerExecutor(i) / coresToBeAllocated + 1
+      }
+      else {
+        tasks * coresPerExecutor(i) / coresToBeAllocated
+      }
+    }
+
+    // val taskPerExecutor = scala.collection.mutable.IndexedSeq((0 until numExecutor).map {
+    //  tasks * coresPerExecutor(_) / coresToBeAllocated
+    // }: _*)
+
+    // val remainingTasks = tasks - taskPerExecutor.sum
+
+    // (0 until remainingTasks).foreach { i =>
+    //  taskPerExecutor(i % numExecutor) = taskPerExecutor(i % numExecutor) + 1
+    // }
+
     taskPerExecutor
+  }
+
+  def computeCoreForExecutors(coresToBeAllocated: Int): IndexedSeq[Int] = {
+    numExecutor = math.ceil(coresToBeAllocated.toDouble / coreForVM.toDouble).toInt
+
+    val coresPerExecutor = (1 to numExecutor).map {
+      i => if (coresToBeAllocated % numExecutor >= i) {
+        1 + (coresToBeAllocated / numExecutor)
+      } else coresToBeAllocated / numExecutor
+    }
+
+    coresPerExecutor
   }
 
 
@@ -111,9 +136,9 @@ class ControllerJob
   (masterUrl: String, stageId: Long, coreNeeded: Int, appname: String): Unit = {
     val masterRef = rpcEnv.setupEndpointRef(
       Master.SYSTEM_NAME, RpcAddress.fromSparkURL(masterUrl), Master.ENDPOINT_NAME)
-    masterRef.send(NeededCore(stageId, coreNeeded, appname))
+    masterRef.send(NeededCore(stageId, computeCoreForExecutors(coreNeeded), appname))
     logInfo("SEND NEEDED CORE TO MASTER %s, %s, %s, %s, %s".format
-    (masterUrl, stageId, tasks, coreNeeded, appname))
+    (masterUrl, stageId, tasks, computeCoreForExecutors(coreNeeded), appname))
 
   }
 
