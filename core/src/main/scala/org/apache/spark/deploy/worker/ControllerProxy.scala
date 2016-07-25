@@ -18,10 +18,11 @@ class ControllerProxy(val driverUrl: String) {
   val ENDPOINT_NAME: String = "ControllerProxy-%s".format(driverUrl)
   val executorTasksMax = new HashMap[String, Long]
 
+  val conf = new SparkConf
+  val securityMgr = new SecurityManager(conf)
+  val rpcEnv = RpcEnv.create("Controller", "localhost", 5555, conf, securityMgr)
+
   def start() {
-    val conf = new SparkConf
-    val securityMgr = new SecurityManager(conf)
-    val rpcEnv = RpcEnv.create("Controller", "localhost", 5555, conf, securityMgr)
     proxyEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME, createProxyEndpoint(driverUrl))
     // rpcEnv.awaitTermination()
   }
