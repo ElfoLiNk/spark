@@ -37,7 +37,7 @@ class ControllerJob
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
-  val rpcEnv = RpcEnv.create("ControllEnv", "localhost", 6666, conf, securityMgr)
+  val rpcEnv = RpcEnv.create("ControllEnv", "localhost", 6666, conf, securityMgr, clientMode = true)
   val controllerEndpoint = rpcEnv.setupEndpoint("ControllJob",
     new ControllerJob(rpcEnv, "ControllEnv", "ControllJob", conf, securityMgr))
   // rpcEnv.awaitTermination()
@@ -56,7 +56,7 @@ class ControllerJob
 
   def computeCoreStage(deadlineStage: Long, numRecord: Long): Int = {
     logInfo("NumRecords: " + numRecord.toString +
-      "DeadlineStage : " + deadlineStage.toString + " NominalRate: " + nominalRate.toString)
+      " DeadlineStage : " + deadlineStage.toString + " NominalRate: " + nominalRate.toString)
     math.ceil(numRecord / deadlineStage / nominalRate).toInt
   }
 
@@ -111,6 +111,8 @@ class ControllerJob
     val masterRef = rpcEnv.setupEndpointRef(
       Master.SYSTEM_NAME, RpcAddress.fromSparkURL(masterUrl), Master.ENDPOINT_NAME)
     masterRef.send(NeededCore(stageId, coreNeeded, appname))
+    logInfo("SEND NEEDED CORE TO MASTER %s, %s, %s, %s, %s".format
+    (masterUrl, stageId, tasks, coreNeeded, appname))
 
   }
 

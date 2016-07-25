@@ -190,6 +190,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
 
 
     if (firstStageId == -1) {
+      logInfo("FIRST STAGE")
       firstStageId = stage.stageId
       val controller = new ControllerJob(
         stage.numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
