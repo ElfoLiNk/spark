@@ -24,13 +24,13 @@ import org.apache.spark.scheduler.StageInfo
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{InitControllerExecutor, NeededCore}
 
 class ControllerJob
-(deadlineJob: Long, alpha: Double, nominalRate: Double) extends Logging {
+(deadlineJob: Long, alpha: Double, nominalRate: Double, overscale: Int) extends Logging {
 
   val alphaDeadline: Long = (alpha * deadlineJob.toDouble).toLong
   val memForCore: Double = 2048000000.0
   val coreForVM: Int = 8
   val numMaxExecutor: Int = 4
-  val OVERSCALE = 2
+  val OVERSCALE = overscale
   var numExecutor = 0
   var coreForExecutor = new scala.collection.mutable.HashMap[Int, Int]
 
@@ -124,11 +124,11 @@ class ControllerJob
   }
 
   def initControllerExecutor(
-    workerUrl: String, executorId: String, stageId: Long,
+    workerUrl: String, executorId: String, stageId: Long, coreMin: Int, coreMax: Int,
     deadline: Long, core: Int, tasksForExecutor: Int): Unit = {
     val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
     workerEndpoint.send(InitControllerExecutor(
-      executorId, stageId, tasksForExecutor, deadline, core))
+      executorId, stageId, coreMin, coreMax, tasksForExecutor, deadline, core))
     logInfo("SEND INIT TO EXECUTOR CONTROLLER %s, %s, %s, %s, %s".format
     (executorId, stageId, tasksForExecutor, deadline, core))
   }

@@ -32,7 +32,8 @@ private[spark] object CoarseGrainedClusterMessages {
 
   // ControllerJob to ControllerExecutor (Worker)
   case class InitControllerExecutor
-  (executorId: String, stageId: Long, tasks: Int, deadline: Long, core: Int)
+  (executorId: String, stageId: Long,
+   coreMin: Int, coreMax: Int, tasks: Int, deadline: Long, core: Int)
     extends CoarseGrainedClusterMessage
 
   // ControllerJob to ControllerExecutor (Master)
