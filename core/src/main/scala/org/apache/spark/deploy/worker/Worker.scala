@@ -122,7 +122,7 @@ private[deploy] class Worker(
   val appDirectories = new HashMap[String, Seq[String]]
   val finishedApps = new HashSet[String]
 
-  val driverUrlAndExecIdToProxy = new HashMap[(String, Int), ControllerProxy]
+  val execIdToProxy = new HashMap[String, ControllerProxy]
 
   val executorIdToController = new HashMap[String, ControllerExecutor]
 
@@ -467,13 +467,13 @@ private[deploy] class Worker(
 
           val driverUrl = appDesc.command.arguments(1)
           logInfo("CREATING PROXY FOR DRIVER: " + driverUrl)
-          val controllerProxy = new ControllerProxy(rpcEnv, driverUrl, execId, executorIdToController(execId.toString).tasks)
+          val controllerProxy = new ControllerProxy(rpcEnv, driverUrl, execId)
           controllerProxy.start()
-          driverUrlAndExecIdToProxy((driverUrl, execId)) = controllerProxy
+          execIdToProxy(execId.toString) = controllerProxy
           logInfo("PROXY ADDRESS:" + controllerProxy.getAddress)
           // scalastyle:off line.size.limit
           val appDescProxed = appDesc.copy(command =
-            Worker.changeDriverToProxy(appDesc.command, driverUrlAndExecIdToProxy(driverUrl, execId).getAddress))
+            Worker.changeDriverToProxy(appDesc.command, execIdToProxy(execId.toString).getAddress))
           logInfo(appDescProxed.command.toString)
           val manager = new ExecutorRunner(
             appId,
@@ -607,6 +607,7 @@ private[deploy] class Worker(
         executorIdToController(executorId) = new ControllerExecutor(deadline, 1, 8, tasks, core)
         logInfo("Created ControllerExecutor: %s , %d , %d , %d , %d".format
         (executorId, stageId, deadline, tasks, core))
+       execIdToProxy(executorId).executorRemainingTask = tasks
 
   }
 

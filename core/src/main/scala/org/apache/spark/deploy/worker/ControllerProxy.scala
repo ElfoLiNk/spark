@@ -13,12 +13,12 @@ import scala.util.{Failure, Success}
   * Created by Matteo on 21/07/2016.
   */
 class ControllerProxy
-      (rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: Int, val taskMax: Int) {
+      (rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: Int) {
 
   var proxyEndpoint: RpcEndpointRef = _
   val ENDPOINT_NAME: String =
     "ControllerProxy-%s".format(driverUrl.split(":").last + "-" + execId.toString)
-  var executorRemainingTask = taskMax
+  var executorRemainingTask: Int = _
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
