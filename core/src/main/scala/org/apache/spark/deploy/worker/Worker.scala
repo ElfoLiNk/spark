@@ -580,13 +580,11 @@ private[deploy] class Worker(
 
     case InitControllerExecutor(executorId, stageId, coreMin, coreMax, tasks, deadline, core) =>
       val controllerExecutor = new ControllerExecutor(deadline, coreMin, coreMax, tasks, core)
-        executorIdToController(executorId) = controllerExecutor
-
-        controllerExecutor.worker = this
-        logInfo("Created ControllerExecutor: %s , %d , %d , %d , %d".format
-        (executorId, stageId, deadline, tasks, core))
-
-       execIdToProxy(executorId).executorRemainingTask = tasks
+      logInfo("Created ControllerExecutor: %s , %d , %d , %d , %d".format
+      (executorId, stageId, deadline, tasks, core))
+      executorIdToController(executorId) = controllerExecutor
+      controllerExecutor.worker = this
+      execIdToProxy(executorId).executorRemainingTask = tasks
       execIdToProxy(executorId).controllerExecutor = controllerExecutor
       onScaleExecutor("", executorId.toInt, "", core)
 

@@ -17,7 +17,7 @@ class ControllerExecutor(deadline: Long, coreMin: Int, coreMax: Int, _tasks: Int
 
   var csiOld: Double = 0.0
   var SP: Double = 0.0
-  var completedTasks: Int = 0
+  var completedTasks: Double = 0.001
   var cs: Double = 0.0
 
   val t = new java.util.Timer()
