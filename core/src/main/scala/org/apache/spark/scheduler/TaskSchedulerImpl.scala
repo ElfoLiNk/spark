@@ -254,8 +254,7 @@ private[spark] class TaskSchedulerImpl(
       val execId = shuffledOffers(i).executorId
       val host = shuffledOffers(i).host
       val stageId = taskSet.stageId
-      if (availableCpus(i) >= CPUS_PER_TASK && (execIdToTaskSet(execId) == stageId
-        || execIdToTaskSet(execId) == 0)) {
+      if (availableCpus(i) >= CPUS_PER_TASK && execIdToTaskSet(execId) == stageId) {
         try {
           for (task <- taskSet.resourceOffer(execId, host, maxLocality)) {
             tasks(i) += task
@@ -269,7 +268,6 @@ private[spark] class TaskSchedulerImpl(
             launchedTask = true
             if (execIdToTaskSet(execId) != stageId) {
               execIdToTaskSet(execId) = stageId
-              sc.listenerBus.post(SparkListenerExecutorAssigned(execId, stageId))
               taskSetToExecId(stageId) += execId
             }
           }
@@ -451,6 +449,11 @@ private[spark] class TaskSchedulerImpl(
         throw new SparkException(s"Exiting due to error from cluster scheduler: $message")
       }
     }
+  }
+
+  def bind(executorId: String, stageId: Int): Unit = {
+    execIdToTaskSet(executorId) = stageId
+    sc.listenerBus.post(SparkListenerExecutorAssigned(executorId, stageId))
   }
 
   override def stop() {

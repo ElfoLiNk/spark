@@ -30,13 +30,17 @@ private[spark] object CoarseGrainedClusterMessages {
 
   case object RetrieveSparkProps extends CoarseGrainedClusterMessage
 
+  case class Bind(executorId: String, stageId: Int) extends CoarseGrainedClusterMessage
+
+  case class UnBind(executorId: String, stageId: Int) extends CoarseGrainedClusterMessage
+
   // ControllerJob to ControllerExecutor (Worker)
   case class InitControllerExecutor
   (executorId: String, stageId: Long,
    coreMin: Int, coreMax: Int, tasks: Int, deadline: Long, core: Int)
     extends CoarseGrainedClusterMessage
 
-  // ControllerJob to ControllerExecutor (Master)
+  // ControllerJob to Master
   case class NeededCoreForExecutors
   (stageId: Long, coreForExecutors: IndexedSeq[Int], driverUrl: String)
     extends CoarseGrainedClusterMessage

@@ -584,7 +584,7 @@ private[deploy] class Worker(
       (executorId, stageId, deadline, tasks, core))
       executorIdToController(executorId) = controllerExecutor
       controllerExecutor.worker = this
-      execIdToProxy(executorId).executorRemainingTask = tasks
+      execIdToProxy(executorId).totalTask = tasks
       execIdToProxy(executorId).controllerExecutor = controllerExecutor
       onScaleExecutor("", executorId.toInt, "", core)
 

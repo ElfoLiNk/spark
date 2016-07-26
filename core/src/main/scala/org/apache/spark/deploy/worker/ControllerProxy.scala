@@ -3,7 +3,9 @@ package org.apache.spark.deploy.worker
 
 import org.apache.spark.rpc._
 import org.apache.spark._
+import org.apache.spark.scheduler.TaskDescription
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages._
+import org.apache.spark.serializer.SerializerInstance
 import org.apache.spark.util.{ThreadUtils, Utils}
 
 import scala.collection.mutable.HashMap
@@ -18,13 +20,16 @@ class ControllerProxy
   var proxyEndpoint: RpcEndpointRef = _
   val ENDPOINT_NAME: String =
     "ControllerProxy-%s".format(driverUrl.split(":").last + "-" + execId.toString)
-  var executorRemainingTask: Int = _
+  var totalTask: Int = _
   var controllerExecutor: ControllerExecutor = _
+  var taskLaunched: Int = 0
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
   val rpcEnv = RpcEnv.create("Controller", rpcEnvWorker.address.host, 5555, conf, securityMgr)
 
+  val env = SparkEnv.createExecutorEnv(new SparkConf, execId.toString, "", 0, 0, true)
+  private[this] val ser: SerializerInstance = env.closureSerializer.newInstance()
 
   def start() {
     proxyEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME, createProxyEndpoint(driverUrl))
@@ -52,24 +57,29 @@ class ControllerProxy
     override def receive: PartialFunction[Any, Unit] = {
       case StatusUpdate(executorId, taskId, state, data) =>
         if (TaskState.isFinished(state)) {
-          executorRemainingTask -= 1
-          if (executorRemainingTask <= 0) {
+          controllerExecutor.completedTasks += 1
+          if (controllerExecutor.completedTasks == totalTask) {
             driver.get.send(ExecutorFinishedTask(executorId))
           }
-          controllerExecutor.completedTasks += 1
         }
         driver.get.send(StatusUpdate(executorId, taskId, state, data))
 
       case RegisteredExecutor(hostname) =>
         logInfo("Already Registered Before ACK also driver knows about executor")
-        // executorRefMap(executorIdToAddress(execId.toString).host).send(RegisteredExecutor(hostname))
+      // executorRefMap(executorIdToAddress(execId.toString).host).send(RegisteredExecutor(hostname))
 
       case RegisterExecutorFailed(message) =>
         executorRefMap(
           executorIdToAddress(execId.toString).host).send(RegisterExecutorFailed(message))
 
-      case LaunchTask(task) =>
-        executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(task))
+      case LaunchTask(data) =>
+        if (taskLaunched == totalTask) {
+          val taskDesc = ser.deserialize[TaskDescription](data.value)
+          driver.get.send(StatusUpdate(execId.toString, taskDesc.taskId, TaskState.FAILED, data))
+        } else {
+          executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(data))
+          taskLaunched += 1
+        }
 
       case StopExecutor =>
           logInfo("Asked to terminate Executor")
