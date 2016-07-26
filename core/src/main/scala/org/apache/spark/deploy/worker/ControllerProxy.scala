@@ -75,6 +75,7 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: I
         rpcEnv.asyncSetupEndpointRefByURI(driverUrl).flatMap { ref =>
           // This is a very fast action so we can use "ThreadUtils.sameThread"
           driver = Some(ref)
+          logInfo(ref.address.toString)
           ref.ask[RegisterExecutorResponse](
             RegisterExecutor(executorId, self, hostPort, cores, logUrls))
         }(ThreadUtils.sameThread).onComplete {
