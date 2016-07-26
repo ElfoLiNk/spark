@@ -58,14 +58,17 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: I
         driver.get.send(StatusUpdate(executorId, taskId, state, data))
 
       case RegisteredExecutor(hostname) =>
-        executorRefMap(hostname).send(RegisteredExecutor(hostname))
+        executorRefMap(executorIdToAddress(execId.toString).host).send(RegisteredExecutor(hostname))
 
       case RegisterExecutorFailed(message) =>
-        executorRefMap(message.split(" ").last).send(RegisterExecutorFailed(message))
+        executorRefMap(
+          executorIdToAddress(execId.toString).host).send(RegisterExecutorFailed(message))
 
       case LaunchTask(task) =>
         executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(task))
 
+      case StopExecutor =>
+        executorRefMap(executorIdToAddress(execId.toString).host).send(StopExecutor)
     }
 
     override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
