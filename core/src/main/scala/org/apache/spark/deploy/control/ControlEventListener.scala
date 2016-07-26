@@ -77,9 +77,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   var stageIdToExecId = new HashMap[Long, Set[String]].withDefaultValue(Set())
   var executorIdToInfo = new HashMap[String, ExecutorInfo]
 
-  var tasksForExecutor = _
-  var coreForExecutor = _
-
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = synchronized {
     val jobGroup = for (
       props <- Option(jobStart.properties);
@@ -201,9 +198,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
 
       }
-      tasksForExecutor = controller.computeTaskForExecutors(
-        stage.numTasks, stageIdToCore(stage.stageId))
-      coreForExecutor = controller.computeCoreForExecutors(stageIdToCore(stage.stageId))
       // ASK MASTER NEEDED EXECUTORS
       controller.askMasterNeededExecutors(
         master, firstStageId, stageIdToCore(firstStageId), appid)
@@ -217,9 +211,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         stage.parentIds.foldLeft(0L) {
           (agg, x) =>
             agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords })
-      tasksForExecutor = controller.computeTaskForExecutors(
-        stage.numTasks, stageIdToCore(stage.stageId))
-      coreForExecutor = controller.computeCoreForExecutors(stageIdToCore(stage.stageId))
     }
 
     logInfo("Submitted stage: %s with deadline: %s and core: %s".format(
@@ -470,8 +461,9 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       "spark://Worker@" + executorIdToInfo(executorAssigned.executorId).executorHost + ":9999",
       executorAssigned.executorId, stageId,
       stageIdToDeadline(stageId),
-      coreForExecutor(executorAssigned.executorId.toInt),
-      tasksForExecutor(executorAssigned.executorId.toInt))
+      controller.computeCoreForExecutors(stageIdToCore(stageId))(executorAssigned.executorId.toInt),
+      controller.computeTaskForExecutors(
+        stageIdToInfo(stageId).numTasks, stageIdToCore(stageId))(executorAssigned.executorId.toInt))
 
     logInfo(stageIdToDeadline.toString)
     logInfo(stageIdToCore.toString)
