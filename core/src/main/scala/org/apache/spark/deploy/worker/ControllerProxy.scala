@@ -28,9 +28,6 @@ class ControllerProxy
   val securityMgr = new SecurityManager(conf)
   val rpcEnv = RpcEnv.create("Controller", rpcEnvWorker.address.host, 5555, conf, securityMgr)
 
-  val env = SparkEnv.createExecutorEnv(new SparkConf, execId.toString, "", 0, 0, true)
-  private[this] val ser: SerializerInstance = env.closureSerializer.newInstance()
-
   def start() {
     proxyEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME, createProxyEndpoint(driverUrl))
     // rpcEnv.awaitTermination()
@@ -74,6 +71,8 @@ class ControllerProxy
 
       case LaunchTask(data) =>
         if (taskLaunched == totalTask) {
+          val env = SparkEnv.createExecutorEnv(new SparkConf, execId.toString, "", 0, 0, false)
+          val ser: SerializerInstance = env.closureSerializer.newInstance()
           val taskDesc = ser.deserialize[TaskDescription](data.value)
           driver.get.send(StatusUpdate(execId.toString, taskDesc.taskId, TaskState.FAILED, data))
         } else {
