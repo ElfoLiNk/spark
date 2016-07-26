@@ -19,6 +19,7 @@ class ControllerProxy
   val ENDPOINT_NAME: String =
     "ControllerProxy-%s".format(driverUrl.split(":").last + "-" + execId.toString)
   var executorRemainingTask: Int = _
+  var controllerExecutor: ControllerExecutor = _
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
@@ -55,6 +56,7 @@ class ControllerProxy
           if (executorRemainingTask <= 0) {
             driver.get.send(ExecutorFinishedTask(executorId))
           }
+          controllerExecutor.completedTasks += 1
         }
         driver.get.send(StatusUpdate(executorId, taskId, state, data))
 
