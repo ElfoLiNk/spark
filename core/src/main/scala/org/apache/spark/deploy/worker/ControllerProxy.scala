@@ -69,7 +69,8 @@ class ControllerProxy
         executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(task))
 
       case StopExecutor =>
-        executorRefMap(executorIdToAddress(execId.toString).host).send(StopExecutor)
+          logInfo("Asked to terminate Executor")
+      //  executorRefMap(executorIdToAddress(execId.toString).host).send(StopExecutor)
     }
 
     override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
