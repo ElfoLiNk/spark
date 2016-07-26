@@ -18,7 +18,7 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: I
   val ENDPOINT_NAME: String =
     "ControllerProxy-%s".format(driverUrl.split(":").last + "-" + execId.toString)
   val executorTasksMax = new HashMap[String, Long]
-  val executorAddress: RpcAddress = _
+  var executorAddress: RpcAddress = _
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)

@@ -122,7 +122,7 @@ private[deploy] class Worker(
   val appDirectories = new HashMap[String, Seq[String]]
   val finishedApps = new HashSet[String]
 
-  val driverUrlToProxy = new HashMap[(String, Int), ControllerProxy]
+  val driverUrlAndExecIdToProxy = new HashMap[(String, Int), ControllerProxy]
 
   val executorIdToController = new HashMap[String, ControllerExecutor]
 
@@ -472,7 +472,8 @@ private[deploy] class Worker(
           driverUrlAndExecIdToProxy((driverUrl, execId)) = controllerProxy
           logInfo("PROXY ADDRESS:" + controllerProxy.getAddress)
           // scalastyle:off line.size.limit
-          val appDescProxed = appDesc.copy(command = Worker.changeDriverToProxy(appDesc.command, driverUrlToProxy(driverUrl).getAddress))
+          val appDescProxed = appDesc.copy(command =
+            Worker.changeDriverToProxy(appDesc.command, driverUrlAndExecIdToProxy(driverUrl, execId).getAddress))
           logInfo(appDescProxed.command.toString)
           val manager = new ExecutorRunner(
             appId,
