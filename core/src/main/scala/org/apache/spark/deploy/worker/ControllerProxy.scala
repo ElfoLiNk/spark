@@ -12,12 +12,13 @@ import scala.util.{Failure, Success}
 /**
   * Created by Matteo on 21/07/2016.
   */
-class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: Int) {
+class ControllerProxy
+      (rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: Int, val taskMax: Int) {
 
   var proxyEndpoint: RpcEndpointRef = _
   val ENDPOINT_NAME: String =
     "ControllerProxy-%s".format(driverUrl.split(":").last + "-" + execId.toString)
-  val executorTasksMax = new HashMap[String, Long]
+  var executorRemainingTask = taskMax
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
@@ -50,8 +51,8 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: I
     override def receive: PartialFunction[Any, Unit] = {
       case StatusUpdate(executorId, taskId, state, data) =>
         if (TaskState.isFinished(state)) {
-          executorTasksMax(executorId) -= 1
-          if (executorTasksMax(executorId) <= 0) {
+          executorRemainingTask -= 1
+          if (executorRemainingTask <= 0) {
             driver.get.send(ExecutorFinishedTask(executorId))
           }
         }

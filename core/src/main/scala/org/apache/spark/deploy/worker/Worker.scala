@@ -467,7 +467,7 @@ private[deploy] class Worker(
 
           val driverUrl = appDesc.command.arguments(1)
           logInfo("CREATING PROXY FOR DRIVER: " + driverUrl)
-          val controllerProxy = new ControllerProxy(rpcEnv, driverUrl, execId)
+          val controllerProxy = new ControllerProxy(rpcEnv, driverUrl, execId, executorIdToController(execId.toString).tasks)
           controllerProxy.start()
           driverUrlAndExecIdToProxy((driverUrl, execId)) = controllerProxy
           logInfo("PROXY ADDRESS:" + controllerProxy.getAddress)
