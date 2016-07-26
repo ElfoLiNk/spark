@@ -77,6 +77,9 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   var stageIdToExecId = new HashMap[Long, Set[String]].withDefaultValue(Set())
   var executorIdToInfo = new HashMap[String, ExecutorInfo]
 
+  var tasksForExecutor = _
+  var coreForExecutor = _
+
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = synchronized {
     val jobGroup = for (
       props <- Option(jobStart.properties);
@@ -190,15 +193,19 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     if (firstStageId == -1) {
       logInfo("FIRST STAGE")
       firstStageId = stage.stageId
-      val controller = new ControllerJob(
-        stage.numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
+      val controller = new ControllerJob(deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
       stageIdToDeadline(stage.stageId) = controller.computeDeadlineFirstStage(stage, stageWeight)
       if (!completedStages.isEmpty) {
       stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(completedStages.toList.head)
       } else {
       stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
+
       }
-      controller.askMasterNeededCore(
+      tasksForExecutor = controller.computeTaskForExecutors(
+        stage.numTasks, stageIdToCore(stage.stageId))
+      coreForExecutor = controller.computeCoreForExecutors(stageIdToCore(stage.stageId))
+      // ASK MASTER NEEDED EXECUTORS
+      controller.askMasterNeededExecutors(
         master, firstStageId, stageIdToCore(firstStageId), appid)
       jobIdToController(jobId.head) = controller
       logInfo(jobIdToController.toString())
@@ -210,6 +217,9 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         stage.parentIds.foldLeft(0L) {
           (agg, x) =>
             agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords })
+      tasksForExecutor = controller.computeTaskForExecutors(
+        stage.numTasks, stageIdToCore(stage.stageId))
+      coreForExecutor = controller.computeCoreForExecutors(stageIdToCore(stage.stageId))
     }
 
     logInfo("Submitted stage: %s with deadline: %s and core: %s".format(
@@ -455,13 +465,13 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       stageId, executorAssigned.executorId))
 
     val jobId = stageIdToActiveJobIds(stageId)
-    val controller = new ControllerJob(
-      stageIdToInfo(stageId).numTasks, deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
+    val controller = new ControllerJob(deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE)
     controller.initControllerExecutor(
       "spark://Worker@" + executorIdToInfo(executorAssigned.executorId).executorHost + ":9999",
       executorAssigned.executorId, stageId,
       stageIdToDeadline(stageId),
-      stageIdToCore(stageId))
+      coreForExecutor(executorAssigned.executorId.toInt),
+      tasksForExecutor(executorAssigned.executorId.toInt))
 
     logInfo(stageIdToDeadline.toString)
     logInfo(stageIdToCore.toString)

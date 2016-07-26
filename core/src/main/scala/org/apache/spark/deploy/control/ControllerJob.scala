@@ -24,7 +24,7 @@ import org.apache.spark.scheduler.StageInfo
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{InitControllerExecutor, NeededCore}
 
 class ControllerJob
-(tasks: Int, deadlineJob: Long, alpha: Double, nominalRate: Double) extends Logging {
+(deadlineJob: Long, alpha: Double, nominalRate: Double) extends Logging {
 
   val alphaDeadline: Long = (alpha * deadlineJob.toDouble).toLong
   val memForCore: Double = 2048000000.0
@@ -76,7 +76,7 @@ class ControllerJob
     math.ceil(totalSize * 30 / memForCore).toInt
   }
 
-  def computeTaskForExecutors(coresToBeAllocated: Int): IndexedSeq[Int] = {
+  def computeTaskForExecutors(coresToBeAllocated: Int, totalTasksStage: Int): IndexedSeq[Int] = {
     numExecutor = math.ceil(coresToBeAllocated.toDouble / coreForVM.toDouble).toInt
 
     val coresPerExecutor = (1 to numExecutor).map {
@@ -85,16 +85,16 @@ class ControllerJob
       } else coresToBeAllocated / numExecutor
     }
 
-    val remainingTasks = tasks - coresPerExecutor.foldLeft(0){
-      (agg, x) => tasks * x / coresToBeAllocated + agg
+    val remainingTasks = totalTasksStage - coresPerExecutor.foldLeft(0){
+      (agg, x) => totalTasksStage * x / coresToBeAllocated + agg
     }
 
     val taskPerExecutor = (0 until numExecutor).map { i =>
       if (i < remainingTasks) {
-        tasks * coresPerExecutor(i) / coresToBeAllocated + 1
+        totalTasksStage * coresPerExecutor(i) / coresToBeAllocated + 1
       }
       else {
-        tasks * coresPerExecutor(i) / coresToBeAllocated
+        totalTasksStage * coresPerExecutor(i) / coresToBeAllocated
       }
     }
 
@@ -123,22 +123,23 @@ class ControllerJob
     coresPerExecutor
   }
 
-
   def initControllerExecutor(
-    workerUrl: String, executorId: String, stageId: Long, deadline: Long, core: Int): Unit = {
+    workerUrl: String, executorId: String, stageId: Long,
+    deadline: Long, core: Int, tasksForExecutor: Int): Unit = {
     val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
-    workerEndpoint.send(InitControllerExecutor(executorId, stageId, tasks, deadline, core))
+    workerEndpoint.send(InitControllerExecutor(
+      executorId, stageId, tasksForExecutor, deadline, core))
     logInfo("SEND INIT TO EXECUTOR CONTROLLER %s, %s, %s, %s, %s".format
-    (executorId, stageId, tasks, deadline, core))
+    (executorId, stageId, tasksForExecutor, deadline, core))
   }
 
-  def askMasterNeededCore
+  def askMasterNeededExecutors
   (masterUrl: String, stageId: Long, coreNeeded: Int, appname: String): Unit = {
     val masterRef = rpcEnv.setupEndpointRef(
       Master.SYSTEM_NAME, RpcAddress.fromSparkURL(masterUrl), Master.ENDPOINT_NAME)
     masterRef.send(NeededCore(stageId, computeCoreForExecutors(coreNeeded), appname))
     logInfo("SEND NEEDED CORE TO MASTER %s, %s, %s, %s, %s".format
-    (masterUrl, stageId, tasks, computeCoreForExecutors(coreNeeded), appname))
+    (masterUrl, stageId, computeCoreForExecutors(coreNeeded), appname))
 
   }
 
