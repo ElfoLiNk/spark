@@ -124,10 +124,10 @@ class ControllerJob
   }
 
   def initControllerExecutor(
-    workerUrl: String, executorId: String, stageId: Long, coreMin: Int, coreMax: Int,
+    workerUrl: String, appId: String, executorId: String, stageId: Long, coreMin: Int, coreMax: Int,
     deadline: Long, core: Int, tasksForExecutor: Int): Unit = {
     val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
-    workerEndpoint.send(InitControllerExecutor(
+    workerEndpoint.send(InitControllerExecutor(appId,
       executorId, stageId, coreMin, coreMax, tasksForExecutor, deadline, core))
     logInfo("SEND INIT TO EXECUTOR CONTROLLER %s, %s, %s, %s, %s".format
     (executorId, stageId, tasksForExecutor, deadline, core))

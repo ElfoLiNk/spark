@@ -48,7 +48,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
 
   // Master
   def master: String = conf.get("spark.master")
-  def appid: String = conf.get("spark.app.name")
+  def appid: String = conf.get("spark.app.id")
 
   // Jobs:
   val activeJobs = new HashMap[Int, JobUIData]
@@ -460,6 +460,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     val controller = new ControllerJob(deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE, OVERSCALE)
     controller.initControllerExecutor(
       "spark://Worker@" + executorIdToInfo(executorAssigned.executorId).executorHost + ":9999",
+      appid,
       executorAssigned.executorId, stageId,
       1,
       controller.computeCoreForExecutors(stageIdToCore(stageId))(executorAssigned.executorId.toInt),
