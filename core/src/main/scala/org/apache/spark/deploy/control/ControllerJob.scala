@@ -30,7 +30,7 @@ class ControllerJob
   val memForCore: Double = 2048000000.0
   val coreForVM: Int = 8
   val numMaxExecutor: Int = 4
-
+  val OVERSCALE = 2
   var numExecutor = 0
   var coreForExecutor = new scala.collection.mutable.HashMap[Int, Int]
 
@@ -57,7 +57,7 @@ class ControllerJob
   def computeCoreStage(deadlineStage: Long, numRecord: Long): Int = {
     logInfo("NumRecords: " + numRecord.toString +
       " DeadlineStage : " + deadlineStage.toString + " NominalRate: " + nominalRate.toString)
-    math.ceil(numRecord / deadlineStage / nominalRate).toInt
+    OVERSCALE * math.ceil(numRecord / deadlineStage / nominalRate).toInt
   }
 
   def computeDeadlineFirstStage(stage: StageInfo, weight: Long): Long = {
@@ -73,7 +73,7 @@ class ControllerJob
     }
     logInfo(stage.rddInfos.toString)
     logInfo("TotalSize RDD First Stage: " + totalSize.toString)
-    math.ceil(totalSize * 30 / memForCore).toInt
+    OVERSCALE * math.ceil(totalSize * 30 / memForCore).toInt
   }
 
   def computeTaskForExecutors(coresToBeAllocated: Int, totalTasksStage: Int): IndexedSeq[Int] = {
@@ -116,8 +116,8 @@ class ControllerJob
 
     val coresPerExecutor = (1 to numExecutor).map {
       i => if (coresToBeAllocated % numExecutor >= i) {
-        1 + (coresToBeAllocated / numExecutor)
-      } else coresToBeAllocated / numExecutor
+        1 + (coresToBeAllocated / numExecutor / OVERSCALE)
+      } else coresToBeAllocated / numExecutor / OVERSCALE
     }
 
     coresPerExecutor
