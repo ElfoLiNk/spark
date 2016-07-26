@@ -70,7 +70,7 @@ class ControllerProxy
 
       case StopExecutor =>
           logInfo("Asked to terminate Executor")
-      //  executorRefMap(executorIdToAddress(execId.toString).host).send(StopExecutor)
+          executorRefMap(executorIdToAddress(execId.toString).host).send(StopExecutor)
     }
 
     override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
@@ -101,6 +101,8 @@ class ControllerProxy
         this.synchronized {
           executorRefMap.put(executorAddress.host, executorRef)
         }
+        context.reply(RegisteredExecutor(executorAddress.host))
+
       case RetrieveSparkProps =>
         val sparkProperties = driver.get.askWithRetry[Seq[(String, String)]](RetrieveSparkProps)
         context.reply(sparkProperties)
