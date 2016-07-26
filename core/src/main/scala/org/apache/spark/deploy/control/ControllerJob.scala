@@ -21,7 +21,7 @@ import org.apache.spark.deploy.master.Master
 import org.apache.spark.{Logging, SecurityManager, SparkConf}
 import org.apache.spark.rpc.{RpcAddress, RpcEnv, ThreadSafeRpcEndpoint}
 import org.apache.spark.scheduler.StageInfo
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{InitControllerExecutor, NeededCore}
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{InitControllerExecutor, NeededCoreForExecutors}
 
 class ControllerJob
 (deadlineJob: Long, alpha: Double, nominalRate: Double, overscale: Int) extends Logging {
@@ -137,7 +137,7 @@ class ControllerJob
   (masterUrl: String, stageId: Long, coreNeeded: Int, appname: String): Unit = {
     val masterRef = rpcEnv.setupEndpointRef(
       Master.SYSTEM_NAME, RpcAddress.fromSparkURL(masterUrl), Master.ENDPOINT_NAME)
-    masterRef.send(NeededCore(stageId, computeCoreForExecutors(coreNeeded), appname))
+    masterRef.send(NeededCoreForExecutors(stageId, computeCoreForExecutors(coreNeeded), appname))
     logInfo("SEND NEEDED CORE TO MASTER %s, %s, %s, %s".format
     (masterUrl, stageId, computeCoreForExecutors(coreNeeded), appname))
 

@@ -37,7 +37,8 @@ private[spark] object CoarseGrainedClusterMessages {
     extends CoarseGrainedClusterMessage
 
   // ControllerJob to ControllerExecutor (Master)
-  case class NeededCore(stageId: Long, coreForExecutors: IndexedSeq[Int], driverUrl: String)
+  case class NeededCoreForExecutors
+  (stageId: Long, coreForExecutors: IndexedSeq[Int], driverUrl: String)
     extends CoarseGrainedClusterMessage
 
   // Proxy to driver
