@@ -22,6 +22,7 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String) {
   val securityMgr = new SecurityManager(conf)
   val rpcEnv = RpcEnv.create("Controller", rpcEnvWorker.address.host, 5555, conf, securityMgr)
 
+
   def start() {
     proxyEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME, createProxyEndpoint(driverUrl))
     // rpcEnv.awaitTermination()
@@ -70,12 +71,11 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String) {
         rpcEnv.asyncSetupEndpointRefByURI(driverUrl).flatMap { ref =>
           // This is a very fast action so we can use "ThreadUtils.sameThread"
           driver = Some(ref)
-          logInfo(rpcEnvWorker.address.host)
           ref.ask[RegisterExecutorResponse](
             RegisterExecutor(executorId,
-              rpcEnv.setupEndpointRefByURI(
+              rpcEnvWorker.setupEndpointRefByURI(
                 "spark://CoarseGrainedExecutorBackend@" +
-                  rpcEnvWorker.address.host + ":" + context.senderAddress.port),
+                  context.senderAddress.toString),
               hostPort, cores, logUrls))
         }(ThreadUtils.sameThread).onComplete {
           // This is a very fast action so we can use "ThreadUtils.sameThread"
