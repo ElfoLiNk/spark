@@ -138,7 +138,7 @@ class ControllerJob
     val masterRef = rpcEnv.setupEndpointRef(
       Master.SYSTEM_NAME, RpcAddress.fromSparkURL(masterUrl), Master.ENDPOINT_NAME)
     masterRef.send(NeededCore(stageId, computeCoreForExecutors(coreNeeded), appname))
-    logInfo("SEND NEEDED CORE TO MASTER %s, %s, %s, %s, %s".format
+    logInfo("SEND NEEDED CORE TO MASTER %s, %s, %s, %s".format
     (masterUrl, stageId, computeCoreForExecutors(coreNeeded), appname))
 
   }
