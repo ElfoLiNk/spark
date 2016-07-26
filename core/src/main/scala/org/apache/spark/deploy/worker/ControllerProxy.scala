@@ -18,7 +18,6 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: I
   val ENDPOINT_NAME: String =
     "ControllerProxy-%s".format(driverUrl.split(":").last + "-" + execId.toString)
   val executorTasksMax = new HashMap[String, Long]
-  var executorAddress: RpcAddress = _
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
@@ -65,7 +64,7 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: I
         executorRefMap(message.split(" ").last).send(RegisterExecutorFailed(message))
 
       case LaunchTask(task) =>
-        executorRefMap(executorAddress.host).send(LaunchTask(task))
+        executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(task))
 
     }
 
