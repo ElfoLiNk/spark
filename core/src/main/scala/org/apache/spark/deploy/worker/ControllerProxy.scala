@@ -59,7 +59,8 @@ class ControllerProxy
         driver.get.send(StatusUpdate(executorId, taskId, state, data))
 
       case RegisteredExecutor(hostname) =>
-        executorRefMap(executorIdToAddress(execId.toString).host).send(RegisteredExecutor(hostname))
+        logInfo("Already Registered Before ACK also driver knows about executor")
+        // executorRefMap(executorIdToAddress(execId.toString).host).send(RegisteredExecutor(hostname))
 
       case RegisterExecutorFailed(message) =>
         executorRefMap(
