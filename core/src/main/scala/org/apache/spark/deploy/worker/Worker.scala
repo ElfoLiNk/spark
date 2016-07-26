@@ -122,7 +122,7 @@ private[deploy] class Worker(
   val appDirectories = new HashMap[String, Seq[String]]
   val finishedApps = new HashSet[String]
 
-  val driverUrlToProxy = new HashMap[String, ControllerProxy]
+  val driverUrlToProxy = new HashMap[(String, Int), ControllerProxy]
 
   val executorIdToController = new HashMap[String, ControllerExecutor]
 
@@ -466,13 +466,11 @@ private[deploy] class Worker(
           coresAllocated += (appId + "/" + execId -> available.take(cores_))
 
           val driverUrl = appDesc.command.arguments(1)
-          if (!driverUrlToProxy.contains(driverUrl)) {
-            logInfo("CREATING PROXY FOR DRIVER: " + driverUrl)
-            val controllerProxy = new ControllerProxy(rpcEnv, driverUrl)
-            controllerProxy.start()
-            driverUrlToProxy(driverUrl) = controllerProxy
-            logInfo("PROXY ADDRESS:" + controllerProxy.getAddress)
-          }
+          logInfo("CREATING PROXY FOR DRIVER: " + driverUrl)
+          val controllerProxy = new ControllerProxy(rpcEnv, driverUrl, execId)
+          controllerProxy.start()
+          driverUrlAndExecIdToProxy((driverUrl, execId)) = controllerProxy
+          logInfo("PROXY ADDRESS:" + controllerProxy.getAddress)
           // scalastyle:off line.size.limit
           val appDescProxed = appDesc.copy(command = Worker.changeDriverToProxy(appDesc.command, driverUrlToProxy(driverUrl).getAddress))
           logInfo(appDescProxed.command.toString)

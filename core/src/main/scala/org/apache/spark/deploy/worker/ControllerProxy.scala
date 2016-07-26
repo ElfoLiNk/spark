@@ -12,11 +12,13 @@ import scala.util.{Failure, Success}
 /**
   * Created by Matteo on 21/07/2016.
   */
-class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String) {
+class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: Int) {
 
-  var proxyEndpoint: RpcEndpointRef = null
-  val ENDPOINT_NAME: String = "ControllerProxy-%s".format(driverUrl.split(":").last)
+  var proxyEndpoint: RpcEndpointRef = _
+  val ENDPOINT_NAME: String =
+    "ControllerProxy-%s".format(driverUrl.split(":").last + "-" + execId.toString)
   val executorTasksMax = new HashMap[String, Long]
+  val executorAddress: RpcAddress = _
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
@@ -62,6 +64,8 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String) {
       case RegisterExecutorFailed(message) =>
         executorRefMap(message.split(" ").last).send(RegisterExecutorFailed(message))
 
+      case LaunchTask(task) =>
+        executorRefMap(executorAddress.host).send(LaunchTask(task))
 
     }
 
@@ -72,11 +76,7 @@ class ControllerProxy(rpcEnvWorker: RpcEnv, val driverUrl: String) {
           // This is a very fast action so we can use "ThreadUtils.sameThread"
           driver = Some(ref)
           ref.ask[RegisterExecutorResponse](
-            RegisterExecutor(executorId,
-              rpcEnvWorker.setupEndpointRefByURI(
-                "spark://CoarseGrainedExecutorBackend@" +
-                  context.senderAddress.toString),
-              hostPort, cores, logUrls))
+            RegisterExecutor(executorId, self, hostPort, cores, logUrls))
         }(ThreadUtils.sameThread).onComplete {
           // This is a very fast action so we can use "ThreadUtils.sameThread"
           case Success(msg) => Utils.tryLogNonFatalError {
