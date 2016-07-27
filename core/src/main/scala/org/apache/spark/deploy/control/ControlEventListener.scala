@@ -203,10 +203,17 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       jobIdToController(jobId.head) = controller
       val deadlineStage = controller.computeDeadlineStage(stage, stageWeight)
       stageIdToDeadline(stage.stageId) = deadlineStage
-      stageIdToCore(stage.stageId) = controller.computeCoreStage(deadlineStage,
-        stage.parentIds.foldLeft(0L) {
+      // FIND RECORD IN INPUT
+      var numRecord = stage.parentIds.foldLeft(0L) {
+        (agg, x) =>
+          agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords }
+      if (numRecord == 0) {
+        numRecord = stageIdToInfo(0).parentIds.foldLeft(0L) {
           (agg, x) =>
-            agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords })
+            agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords }
+      }
+      stageIdToCore(stage.stageId) = controller.computeCoreStage(deadlineStage, numRecord)
+      
       // ASK MASTER NEEDED EXECUTORS
       controller.askMasterNeededExecutors(
         master, firstStageId, stageIdToCore(firstStageId), appid)
