@@ -589,13 +589,13 @@ private[deploy] class Worker(
 
   }
 
-  def onScaleExecutor(appId: String, execId: String, coresWanted: Int): Unit = {
+  def onScaleExecutor(_appId: String, execId: String, coresWanted: Int): Unit = {
     try {
-      if (appId == "") {
-        val fullId = executors.values.map(_.appId).toSet.head + "/" + execId
-      } else {
-        val fullId = appId + "/" + execId
+      var appId = _appId
+      if (appId.isEmpty) {
+        appId = executors.values.map(_.appId).toSet.head
       }
+      val fullId = appId + "/" + execId
       var unwanted: List[Int] = List()
       coresAllocated.filterKeys((fullId) => false).values.foreach(list => unwanted = unwanted ++ list)
       val available = (0 until cores).toList.filterNot(unwanted.toSet)
