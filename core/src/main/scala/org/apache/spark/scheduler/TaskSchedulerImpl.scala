@@ -80,7 +80,7 @@ private[spark] class TaskSchedulerImpl(
   private[scheduler] val taskIdToTaskSetManager = new HashMap[Long, TaskSetManager]
   val taskIdToExecutorId = new HashMap[Long, String]
 
-  val execIdToTaskSet = new HashMap[String, Long].withDefaultValue(0)
+  val execIdToTaskSet = new HashMap[String, Long].withDefaultValue(-1)
   val taskSetToExecId = new HashMap[Long, Set[String]].withDefaultValue(Set())
 
   @volatile private var hasReceivedTask = false
@@ -455,6 +455,11 @@ private[spark] class TaskSchedulerImpl(
     logInfo("BINDING EXEXUTOR ID: %s TO STAGEID %d".format(executorId, stageId))
     execIdToTaskSet(executorId) = stageId
     sc.listenerBus.post(SparkListenerExecutorAssigned(executorId, stageId))
+  }
+
+  def unBind(executorId: String): Unit = {
+    logInfo("UNBINDING EXEXUTOR ID: %s".format(executorId))
+    execIdToTaskSet(executorId) = -1
   }
 
   override def stop() {

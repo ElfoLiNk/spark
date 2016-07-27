@@ -119,6 +119,7 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
           }
         }
       case ExecutorFinishedTask(executorId) =>
+        scheduler.unbind(executorId)
         executorDataMap.get(executorId) match {
           case Some(executorInfo) =>
             logInfo("Executor: %s finished its task set free core to zero".format(executorId))
