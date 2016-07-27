@@ -41,10 +41,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   @volatile var startTime = -1L
   @volatile var endTime = -1L
 
-  val DEADLINE: Int = 1000000
-  val ALPHA: Double = 0.8
-  val NOMINAL_RATE: Double = 1000.0
-  val OVERSCALE: Int = 2
+
+  val DEADLINE: Int = conf.get("spark.control.deadline").toInt // 1000000
 
   // Master
   def master: String = conf.get("spark.master")
@@ -191,7 +189,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     if (firstStageId == -1 && stageIdToActiveJobIds(stage.stageId).head == 0) {
       logInfo("FIRST STAGE FIRST JOB GENERATES/LOADS DATA")
       firstStageId = stage.stageId
-      val controller = new ControllerJob(deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE, OVERSCALE)
+      val controller = new ControllerJob(conf, deadlineJobs(jobId.head))
       stageIdToDeadline(stage.stageId) = controller.computeDeadlineFirstStage(stage, stageWeight)
       if (!completedStages.isEmpty) {
         stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(completedStages.toList.head)
@@ -459,7 +457,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     val jobId = stageIdToActiveJobIds(stageId)
     val workerUrl = "spark://Worker@" +
       executorIdToInfo(executorAssigned.executorId).executorHost + ":9999"
-    val controller = new ControllerJob(deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE, OVERSCALE)
+    val controller = new ControllerJob(conf, deadlineJobs(jobId.head))
     if (jobId.head != 0) {
       val coreToStart = math.ceil(controller.computeCoreForExecutors(stageIdToCore(stageId))
       (executorAssigned.executorId.toInt)).toInt

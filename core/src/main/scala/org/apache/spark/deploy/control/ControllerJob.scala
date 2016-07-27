@@ -25,19 +25,21 @@ import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages._
 
 import scala.collection.mutable.HashMap
 
-class ControllerJob
-(deadlineJob: Long, alpha: Double, nominalRate: Double, overscale: Int) extends Logging {
+class ControllerJob(conf: SparkConf, deadlineJob: Long) extends Logging {
 
-  val alphaDeadline: Long = (alpha * deadlineJob.toDouble).toLong
-  val memForCore: Double = 2048000000.0
-  val coreForVM: Int = 8
-  val numMaxExecutor: Int = 4
-  val OVERSCALE = overscale
+  val ALPHA: Double = conf.get("spark.control.alpha").toDouble // 0.8
+  val NOMINAL_RATE: Double = conf.get("spark.control.nominalrate").toDouble // 1000.0
+  val OVERSCALE: Int = conf.get("spark.control.overscale").toInt // 2
+
+  val alphaDeadline: Long = (ALPHA * deadlineJob.toDouble).toLong
+  val memForCore: Double = conf.get("spark.control.memcore").toDouble  // 2048000000.0
+
+  val numMaxExecutor: Int = conf.get("spark.control.maxexecutor").toInt // 4
+  val coreForVM: Int = conf.get("spark.control.coreforvm").toInt  // 8
+
   var numExecutor = 0
   var coreForExecutor = new HashMap[Int, Int]
 
-
-  val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
   val rpcEnv = RpcEnv.create("ControllEnv", "localhost", 6666, conf, securityMgr, clientMode = true)
   val controllerEndpoint = rpcEnv.setupEndpoint("ControllJob",
@@ -58,8 +60,8 @@ class ControllerJob
 
   def computeCoreStage(deadlineStage: Long, numRecord: Long): Int = {
     logInfo("NumRecords: " + numRecord.toString +
-      " DeadlineStage : " + deadlineStage.toString + " NominalRate: " + nominalRate.toString)
-    OVERSCALE * math.ceil(numRecord / deadlineStage / nominalRate).toInt
+      " DeadlineStage : " + deadlineStage.toString + " NominalRate: " + NOMINAL_RATE.toString)
+    OVERSCALE * math.ceil(numRecord / deadlineStage / NOMINAL_RATE).toInt
   }
 
   def computeDeadlineFirstStage(stage: StageInfo, weight: Long): Long = {
