@@ -149,7 +149,12 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
           case Some(executorData) =>
             var newFreeCores = 0
             if (cores < executorData.totalCores){
-              newFreeCores = cores
+              if (executorData.totalCores == executorData.freeCores) {
+                newFreeCores = cores
+              }
+              if (executorData.totalCores - executorData.freeCores < cores){
+                newFreeCores = cores - executorData.totalCores - executorData.freeCores
+              }
             } else {
               newFreeCores = executorData.freeCores + cores - executorData.totalCores
             }
