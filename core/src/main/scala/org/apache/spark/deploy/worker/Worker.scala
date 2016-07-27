@@ -654,6 +654,7 @@ private[deploy] class Worker(
             Some(e.toString), None))
         }
       }
+    }
 
   }
 
