@@ -38,7 +38,7 @@ class ControllerExecutor
       val nextCore: Int = nextAllocation()
       if (nextCore != oldCore) {
         oldCore = nextCore
-        worker.onScaleExecutor(nextCore)
+        worker.onScaleExecutor("", executorId, nextCore)
       }
 
       logInfo("SP Updated: " + SP.toString)
