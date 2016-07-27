@@ -67,7 +67,7 @@ class ControllerProxy
         if (TaskState.isFinished(state)) {
           controllerExecutor.completedTasks += 1
           taskCompleted += 1
-          if (controllerExecutor.completedTasks == totalTask) {
+          if (controllerExecutor.completedTasks >= totalTask) {
             driver.get.send(ExecutorFinishedTask(executorId))
             controllerExecutor.stop()
           }
@@ -83,7 +83,7 @@ class ControllerProxy
           executorIdToAddress(execId.toString).host).send(RegisterExecutorFailed(message))
 
       case LaunchTask(taskId, data) =>
-        if (taskLaunched == totalTask) {
+        if (taskLaunched >= totalTask) {
           driver.get.send(StatusUpdate(execId.toString, taskId, TaskState.KILLED, data))
         } else {
           executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(taskId, data))

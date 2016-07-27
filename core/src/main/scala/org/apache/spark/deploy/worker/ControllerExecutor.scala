@@ -41,7 +41,8 @@ class ControllerExecutor
         worker.onScaleExecutor("", executorId, nextCore)
       }
 
-      logInfo("SP Updated: " + SP.toString)
+      logInfo("SP Updated: " + (SP - (SP % 0.01)).toString)
+      logInfo("Real: " + (completedTasks/tasks).toInt.toString)
       logInfo("CoreToAllocate: " + nextCore.toString)
       logInfo("Completed Task: " + completedTasks.toInt.toString)
     }
