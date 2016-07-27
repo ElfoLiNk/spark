@@ -587,6 +587,8 @@ private[deploy] class Worker(
       execIdToProxy(executorId).controllerExecutor = controllerExecutor
       controllerExecutor.start()
 
+    case Bind(executorId, stageId) =>
+      execIdToProxy(executorId).proxyEndpoint.send(Bind(executorId, stageId))
   }
 
   def onScaleExecutor(_appId: String, execId: String, coresWanted: Int): Unit = {
