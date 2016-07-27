@@ -208,9 +208,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         (agg, x) =>
           agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords }
       if (numRecord == 0) {
-        numRecord = stageIdToInfo(0).parentIds.foldLeft(0L) {
-          (agg, x) =>
-            agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords }
+        numRecord = stageIdToData(0, 0).outputRecords + stageIdToData(0, 0).shuffleWriteRecords
       }
       stageIdToCore(stage.stageId) = controller.computeCoreStage(deadlineStage, numRecord)
 
