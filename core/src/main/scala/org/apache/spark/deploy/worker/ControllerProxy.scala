@@ -93,7 +93,7 @@ class ControllerProxy
       case StopExecutor =>
         logInfo("Asked to terminate Executor")
         executorRefMap(executorIdToAddress(execId.toString).host).send(StopExecutor)
-        controllerExecutor.stop()
+        if (controllerExecutor != null) controllerExecutor.stop()
 
       case Bind(executorId, stageId) =>
         driver.get.send(Bind(executorId, stageId))
