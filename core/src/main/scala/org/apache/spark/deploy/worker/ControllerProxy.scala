@@ -69,6 +69,8 @@ class ControllerProxy
           taskCompleted += 1
           if (taskCompleted >= totalTask) {
             driver.get.send(ExecutorFinishedTask(executorId))
+            taskCompleted = 0
+            taskLaunched = 0
             if (controllerExecutor != null) controllerExecutor.stop()
           }
         }
