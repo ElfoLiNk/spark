@@ -52,10 +52,7 @@ class ControllerJob(conf: SparkConf, deadlineJob: Long) extends Logging {
   }
 
   def computeDeadlineStage(stage: StageInfo, weight: Long): Long = {
-    if (weight != 0) {
-      return (alphaDeadline - stage.submissionTime.get) / weight
-    }
-    alphaDeadline
+    alphaDeadline - stage.submissionTime.get / (weight + 1)
   }
 
   def computeCoreStage(deadlineStage: Long, numRecord: Long): Int = {
@@ -65,10 +62,7 @@ class ControllerJob(conf: SparkConf, deadlineJob: Long) extends Logging {
   }
 
   def computeDeadlineFirstStage(stage: StageInfo, weight: Long): Long = {
-    if (weight != 0) {
-      return (alphaDeadline - stage.submissionTime.get) / weight
-    }
-    alphaDeadline
+    alphaDeadline - stage.submissionTime.get / (weight + 1)
   }
 
   def computeCoreFirstStage(stage: StageInfo): Int = {
