@@ -208,7 +208,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         (agg, x) =>
           agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords }
       if (numRecord == 0) {
-        val totalSize = stage.rddInfos.foldLeft(0L) {
+        val totalSize = stageIdToInfo(0).rddInfos.foldLeft(0L) {
           (acc, rdd) => acc + rdd.memSize + rdd.diskSize + rdd.externalBlockStoreSize
         }
         stageIdToCore(stage.stageId) = controller.computeCoreStageFromSize(deadlineStage, totalSize)
