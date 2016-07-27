@@ -41,7 +41,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   @volatile var startTime = -1L
   @volatile var endTime = -1L
 
-  val DEADLINE: Int = 1000
+  val DEADLINE: Int = 1000000
   val ALPHA: Double = 0.8
   val NOMINAL_RATE: Double = 1000.0
   val OVERSCALE: Int = 2
