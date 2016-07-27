@@ -189,7 +189,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
 
 
     if (firstStageId == -1 && stageIdToActiveJobIds(stage.stageId).head == 0) {
-      logInfo("FIRST STAGE")
+      logInfo("FIRST STAGE FIRST JOB GENERATES/LOADS DATA")
       firstStageId = stage.stageId
       val controller = new ControllerJob(deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE, OVERSCALE)
       stageIdToDeadline(stage.stageId) = controller.computeDeadlineFirstStage(stage, stageWeight)
@@ -449,8 +449,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   }
 
 
-  override def onExecutorAssigned(
-                                   executorAssigned: SparkListenerExecutorAssigned): Unit = synchronized {
+  override def onExecutorAssigned
+  (executorAssigned: SparkListenerExecutorAssigned): Unit = synchronized {
     val stageId = executorAssigned.stageId
     execIdToStageId(executorAssigned.executorId) = stageId
     stageIdToExecId(stageId) += executorAssigned.executorId
@@ -478,6 +478,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         taskToCompute)
     } else {
       controller.bind(workerUrl, executorAssigned.executorId, stageId)
+      controller.scaleExecutor(
+        workerUrl, "", executorAssigned.executorId, stageIdToCore(stageId) / controller.coreForVM)
     }
   }
 }
