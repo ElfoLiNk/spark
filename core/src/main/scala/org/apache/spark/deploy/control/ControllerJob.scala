@@ -32,8 +32,8 @@ class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Loggi
   val NOMINAL_RATE_RECORD: Double = conf.get("spark.control.nominalrate").toDouble // 1000.0
   val OVERSCALE: Int = conf.get("spark.control.overscale").toInt // 2
 
-  val NOMINAL_RATE_DATA: Double = conf.get
-  ("spark.control.nominalratedata").toDouble  // 2048000000.0
+  val NOMINAL_RATE_DATA: Double = conf.get(
+    "spark.control.nominalratedata").toDouble  // 2048000000.0
 
   val numMaxExecutor: Int = conf.get("spark.control.maxexecutor").toInt // 4
   val coreForVM: Int = conf.get("spark.control.coreforvm").toInt  // 8
