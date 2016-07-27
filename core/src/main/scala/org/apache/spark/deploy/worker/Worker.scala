@@ -578,7 +578,8 @@ private[deploy] class Worker(
       finishedApps += id
       maybeCleanupApplication(id)
 
-    case InitControllerExecutor(executorId, stageId, coreMin, coreMax, tasks, deadline, core) =>
+    case InitControllerExecutor
+      (appId, executorId, stageId, coreMin, coreMax, tasks, deadline, core) =>
       val controllerExecutor = new ControllerExecutor(deadline, coreMin, coreMax, tasks, core)
       logInfo("Created ControllerExecutor: %s , %d , %d , %d , %d".format
       (executorId, stageId, deadline, tasks, core))
@@ -586,7 +587,7 @@ private[deploy] class Worker(
       controllerExecutor.worker = this
       execIdToProxy(executorId).totalTask = tasks
       execIdToProxy(executorId).controllerExecutor = controllerExecutor
-      onScaleExecutor("", executorId.toInt, "", core)
+      onScaleExecutor(appId, executorId.toInt, "", core)
 
   }
 
