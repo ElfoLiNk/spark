@@ -65,7 +65,7 @@ class ControllerProxy
     override def receive: PartialFunction[Any, Unit] = {
       case StatusUpdate(executorId, taskId, state, data) =>
         if (TaskState.isFinished(state)) {
-          controllerExecutor.completedTasks += 1
+          if (controllerExecutor != null) controllerExecutor.completedTasks += 1
           taskCompleted += 1
           if (controllerExecutor.completedTasks >= totalTask) {
             driver.get.send(ExecutorFinishedTask(executorId))
