@@ -121,7 +121,7 @@ class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Loggi
     if (numExecutor > numMaxExecutor) {
       numExecutor = numMaxExecutor
     }
-    
+
     val coresPerExecutor = (1 to numExecutor).map {
       i => if (coresToBeAllocated % numExecutor >= i) {
         1 + (coresToBeAllocated / numExecutor / OVERSCALE)
@@ -151,7 +151,7 @@ class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Loggi
     val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
     workerEndpoint.send(InitControllerExecutor(
       executorId, stageId, coreMin, coreMax, tasksForExecutor, deadline, core))
-    logInfo("SEND INIT TO EXECUTOR CONTROLLER %s, %s, %s, %s, %s".format
+    logInfo("SEND INIT TO EXECUTOR CONTROLLER EID %s, SID %s, TASK %s, DL %s, C %s".format
     (executorId, stageId, tasksForExecutor, deadline, core))
   }
 

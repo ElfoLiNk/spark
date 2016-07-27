@@ -222,9 +222,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       executorNeeded = controller.computeCoreForExecutors(stageIdToCore(stage.stageId)).size
     }
 
-    logInfo("Submitted stage: %s with deadline: %s and core: %s".format(
-      stage.stageId, stageIdToDeadline(stage.stageId), stageIdToCore(stage.stageId)))
-
     activeStages(stage.stageId) = stage
     pendingStages.remove(stage.stageId)
 
@@ -469,7 +466,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     val stageId = executorAssigned.stageId
     execIdToStageId(executorAssigned.executorId) = stageId
     stageIdToExecId(stageId) += executorAssigned.executorId
-    logInfo("Assigned %s stage to %s executor".format(
+    logInfo("Assigned stage %s to executor %s".format(
       stageId, executorAssigned.executorId))
     val jobId = stageIdToActiveJobIds(stageId)
     val workerUrl = "spark://Worker@" +
@@ -478,19 +475,21 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     if (jobId.head != 0) {
       val coreToStart = math.ceil(controller.computeCoreForExecutors(stageIdToCore(stageId))
       (executorAssigned.executorId.toInt)).toInt
-      val taskToCompute = controller.computeTaskForExecutors(
-        stageIdToInfo(stageId).numTasks, stageIdToCore(stageId))(executorAssigned.executorId.toInt)
+      val taskForExecutorId = controller.computeTaskForExecutors(
+        stageIdToCore(stageId),
+        stageIdToInfo(stageId).numTasks)(executorAssigned.executorId.toInt)
       val maxCore =
         controller.computeCoreForExecutors(stageIdToCore(stageId))(executorAssigned.executorId.toInt)
       controller.scaleExecutor(workerUrl, appid, executorAssigned.executorId, coreToStart)
       controller.initControllerExecutor(
         workerUrl,
-        executorAssigned.executorId, stageId,
+        executorAssigned.executorId,
+        stageId,
         1,
         maxCore,
         stageIdToDeadline(stageId),
         coreToStart,
-        taskToCompute)
+        taskForExecutorId)
     } else {
       val taskForExecutorId = controller.computeTaskForExecutors(stageIdToCore(stageId),
         stageIdToInfo(stageId).numTasks)(executorAssigned.executorId.toInt)
