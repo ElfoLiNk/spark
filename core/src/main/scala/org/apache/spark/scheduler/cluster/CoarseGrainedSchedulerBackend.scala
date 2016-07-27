@@ -147,9 +147,12 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
       case ExecutorScaled(execId, cores) =>
         executorDataMap.get(execId) match {
           case Some(executorData) =>
-            val newFreeCores = if (executorData.freeCores - cores > 0)
-              { executorData.freeCores - cores }
-                else 0
+            var newFreeCores = 0
+            if (cores < executorData.totalCores){
+              newFreeCores = 0
+            } else {
+              newFreeCores = executorData.freeCores + cores - executorData.totalCores
+            }
             executorDataMap (execId) = new ExecutorData(executorData.executorEndpoint,
               executorData.executorAddress, executorData.executorHost,
               newFreeCores, cores, executorData.logUrlMap)
