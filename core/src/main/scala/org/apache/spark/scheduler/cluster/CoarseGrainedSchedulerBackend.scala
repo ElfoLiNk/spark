@@ -120,14 +120,6 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
         }
       case ExecutorFinishedTask(executorId) =>
         scheduler.unbind(executorId)
-        executorDataMap.get(executorId) match {
-          case Some(executorInfo) =>
-            logInfo("Executor: %s finished its task set free core to zero".format(executorId))
-            executorInfo.freeCores = 0
-          case None =>
-            logWarning(s"Ignored task finished " +
-              s"from unknown executor with ID $executorId")
-        }
 
       case ReviveOffers =>
         makeOffers()
