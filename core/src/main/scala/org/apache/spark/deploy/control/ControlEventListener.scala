@@ -51,7 +51,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   // Jobs:
   val activeJobs = new HashMap[Int, JobUIData]
   val jobIdToData = new HashMap[Int, JobUIData]
-
   val deadlineJobs = new HashMap[Int, Long]
   val jobIdToController = new HashMap[Int, ControllerJob]
 
@@ -75,6 +74,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   var execIdToStageId = new HashMap[String, Long].withDefaultValue(0)
   var stageIdToExecId = new HashMap[Long, Set[String]].withDefaultValue(Set())
   var executorIdToInfo = new HashMap[String, ExecutorInfo]
+
+  var executorNeeded: Int = 1
 
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = synchronized {
     deadlineJobs(jobStart.jobId) = System.currentTimeMillis() + DEADLINE
@@ -185,7 +186,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     val stageWeight = stageSubmitted.weight
     val jobId = stageIdToActiveJobIds(stage.stageId)
 
-
     if (firstStageId == -1 && stageIdToActiveJobIds(stage.stageId).head == 0) {
       logInfo("FIRST STAGE FIRST JOB GENERATES/LOADS DATA")
       firstStageId = stage.stageId
@@ -198,6 +198,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       }
       jobIdToController(jobId.head) = controller
       logInfo(jobIdToController.toString())
+
     } else {
       val controller = new ControllerJob(conf, deadlineJobs(jobId.head))
       jobIdToController(jobId.head) = controller
@@ -217,7 +218,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       }
       // ASK MASTER NEEDED EXECUTORS
       controller.askMasterNeededExecutors(
-        master, firstStageId, stageIdToCore(firstStageId), appid)
+        master, firstStageId, stageIdToCore(stage.stageId), appid)
+      executorNeeded = controller.computeCoreForExecutors(stageIdToCore(stage.stageId)).size
     }
 
     logInfo("Submitted stage: %s with deadline: %s and core: %s".format(
@@ -225,13 +227,9 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
 
     activeStages(stage.stageId) = stage
     pendingStages.remove(stage.stageId)
-    val poolName = Option(stageSubmitted.properties).map {
-      p => p.getProperty("spark.scheduler.pool", SparkUI.DEFAULT_POOL_NAME)
-    }.getOrElse(SparkUI.DEFAULT_POOL_NAME)
 
     stageIdToInfo(stage.stageId) = stage
     val stageData = stageIdToData.getOrElseUpdate((stage.stageId, stage.attemptId), new StageUIData)
-    stageData.schedulingPool = poolName
 
     stageData.description = Option(stageSubmitted.properties).flatMap {
       p => Option(p.getProperty(SparkContext.SPARK_JOB_DESCRIPTION))
@@ -249,6 +247,16 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     }
     logInfo(stageIdToDeadline.toString)
     logInfo(stageIdToCore.toString)
+
+    if (executorAvailable.size >= executorNeeded) {
+      // LAUNCH BIND
+      for (exec <- executorAvailable.toList)
+      {
+        onExecutorAssigned(
+          new SparkListenerExecutorAssigned(exec, stage.stageId))
+
+      }
+    }
   }
 
   override def onTaskStart(taskStart: SparkListenerTaskStart): Unit = synchronized {
