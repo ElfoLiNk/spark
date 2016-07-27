@@ -36,7 +36,7 @@ import org.apache.spark.deploy.master.{DriverState, Master}
 import org.apache.spark.deploy.worker.ui.WorkerWebUI
 import org.apache.spark.metrics.MetricsSystem
 import org.apache.spark.rpc._
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{Bind, InitControllerExecutor}
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{Bind, InitControllerExecutor, ScaleExecutor, ExecutorScaled}
 import org.apache.spark.util.{SignalLogger, ThreadUtils, Utils}
 
 private[deploy] class Worker(
@@ -512,13 +512,10 @@ private[deploy] class Worker(
         }
       }
 
-    case ScaleExecutor(masterUrl, appId, execId, appDesc, cores_) =>
-      if (masterUrl != activeMasterUrl) {
-        logWarning("Invalid Master (" + masterUrl + ") attempted to scale executor.")
-      } else {
-          logInfo("Asked to scale executor %s/%d for %s".format(appId, execId, appDesc.name))
-          onScaleExecutor(appId, execId, appDesc.name, cores_)
-        }
+    case ScaleExecutor(appId, execId, cores_) =>
+          logInfo("Asked to scale executor %s/%d".format(appId, execId))
+          onScaleExecutor(appId, execId, cores_)
+
 
     case executorStateChanged @ ExecutorStateChanged(appId, execId, state, message, exitStatus) =>
       handleExecutorStateChanged(executorStateChanged)
@@ -579,8 +576,7 @@ private[deploy] class Worker(
       maybeCleanupApplication(id)
 
     case InitControllerExecutor
-      (appId, executorId, stageId, coreMin, coreMax, tasks, deadline, core) =>
-      onScaleExecutor(appId, executorId.toInt, "", core)
+      (executorId, stageId, coreMin, coreMax, tasks, deadline, core) =>
       execIdToProxy(executorId).proxyEndpoint.send(Bind(executorId, stageId.toInt))
       val controllerExecutor = new ControllerExecutor(deadline, coreMin, coreMax, tasks, core)
       logInfo("Created ControllerExecutor: %s , %d , %d , %d , %d".format
@@ -593,31 +589,33 @@ private[deploy] class Worker(
 
   }
 
-  def onScaleExecutor(appId: String, execId: Int,
-                      name: String,
-                      coresWanted: Int): Unit = {
+  def onScaleExecutor(appId: String, execId: String, coresWanted: Int): Unit = {
     try {
       val fullId = appId + "/" + execId
       var unwanted: List[Int] = List()
       coresAllocated.filterKeys((fullId) => false).values.foreach(list => unwanted = unwanted ++ list)
       val available = (0 to cores - 1).toList.filterNot(unwanted.toSet)
       val cpuset = available.take(coresWanted - executors(fullId).cores).mkString(",")
-      Seq("docker", "update" , "--cpuset-cpus='" + cpuset + "'", appId + "." + execId).!
+      val commandUpdateDocker = Seq("docker", "update" ,
+        "--cpuset-cpus='" + cpuset + "'", appId + "." + execId)
+      commandUpdateDocker.!
+      logInfo(commandUpdateDocker.toString)
       logInfo("Scaled executorId %d  of appId %s to  %d Core".format(execId, appId, coresWanted))
       coresAllocated += (appId + "/" + execId -> available.take(coresWanted))
       executors(fullId).substituteVariables("CORES " + cores.toString)
 
+      execIdToProxy(execId.toString).proxyEndpoint.send(ExecutorScaled(execId, coresWanted))
       sendToMaster(ExecutorStateChanged(appId, execId.toInt, ExecutorState.RUNNING, None, None))
     } catch {
       case e: Exception => {
-        logError(s"Failed to scale executor $appId/$execId for ${name}.", e)
+        logError(s"Failed to scale executor $appId/$execId ", e)
         if (executors.contains(appId + "/" + execId)) {
           executors(appId + "/" + execId).kill()
           val exitCode = Seq("docker", "stop" , appId + "." + execId).!
           executors -= appId + "/" + execId
           coresAllocated -= appId + "/" + execId
         }
-        sendToMaster(ExecutorStateChanged(appId, execId, ExecutorState.FAILED,
+        sendToMaster(ExecutorStateChanged(appId, execId.toInt, ExecutorState.FAILED,
           Some(e.toString), None))
       }
     }

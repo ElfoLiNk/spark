@@ -21,7 +21,8 @@ import org.apache.spark.deploy.master.Master
 import org.apache.spark.{Logging, SecurityManager, SparkConf}
 import org.apache.spark.rpc.{RpcAddress, RpcEnv, ThreadSafeRpcEndpoint}
 import org.apache.spark.scheduler.StageInfo
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{InitControllerExecutor, NeededCoreForExecutors}
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{InitControllerExecutor, NeededCoreForExecutors, ScaleExecutor}
+
 import scala.collection.mutable.HashMap
 
 class ControllerJob
@@ -125,11 +126,16 @@ class ControllerJob
     coresPerExecutor
   }
 
+  def scaleExecutor(workerUrl: String, appId: String, executorId: String, core: Int): Unit = {
+    val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
+    workerEndpoint.send(ScaleExecutor(appId, executorId, core))
+  }
+
   def initControllerExecutor(
-    workerUrl: String, appId: String, executorId: String, stageId: Long, coreMin: Int, coreMax: Int,
+    workerUrl: String, executorId: String, stageId: Long, coreMin: Int, coreMax: Int,
     deadline: Long, core: Int, tasksForExecutor: Int): Unit = {
     val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
-    workerEndpoint.send(InitControllerExecutor(appId,
+    workerEndpoint.send(InitControllerExecutor(
       executorId, stageId, coreMin, coreMax, tasksForExecutor, deadline, core))
     logInfo("SEND INIT TO EXECUTOR CONTROLLER %s, %s, %s, %s, %s".format
     (executorId, stageId, tasksForExecutor, deadline, core))

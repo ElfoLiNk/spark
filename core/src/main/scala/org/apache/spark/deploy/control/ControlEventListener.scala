@@ -444,7 +444,8 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   override def onExecutorAdded(executorAdded: SparkListenerExecutorAdded): Unit = synchronized {
     executorAvailable += executorAdded.executorId
     executorIdToInfo(executorAdded.executorId) = executorAdded.executorInfo
-    onExecutorAssigned(new SparkListenerExecutorAssigned(executorAdded.executorId, activeStages.head._2.stageId))
+    onExecutorAssigned(
+      new SparkListenerExecutorAssigned(executorAdded.executorId, activeStages.head._2.stageId))
   }
 
 
@@ -457,17 +458,23 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       stageId, executorAssigned.executorId))
 
     val jobId = stageIdToActiveJobIds(stageId)
+    val workerUrl = "spark://Worker@" +
+      executorIdToInfo(executorAssigned.executorId).executorHost + ":9999"
     val controller = new ControllerJob(deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE, OVERSCALE)
+    val coreToStart = math.ceil(controller.computeCoreForExecutors(stageIdToCore(stageId))
+    (executorAssigned.executorId.toInt) / OVERSCALE).toInt
+    val taskToCompute = controller.computeTaskForExecutors(
+      stageIdToInfo(stageId).numTasks, stageIdToCore(stageId))(executorAssigned.executorId.toInt)
+    val maxCore =
+      controller.computeCoreForExecutors(stageIdToCore(stageId))(executorAssigned.executorId.toInt)
+    controller.scaleExecutor(workerUrl, appid, executorAssigned.executorId, coreToStart)
     controller.initControllerExecutor(
-      "spark://Worker@" + executorIdToInfo(executorAssigned.executorId).executorHost + ":9999",
-      appid,
+      workerUrl,
       executorAssigned.executorId, stageId,
       1,
-      controller.computeCoreForExecutors(stageIdToCore(stageId))(executorAssigned.executorId.toInt),
+      maxCore,
       stageIdToDeadline(stageId),
-      math.ceil(controller.computeCoreForExecutors(stageIdToCore(stageId))
-      (executorAssigned.executorId.toInt) / OVERSCALE).toInt,
-      controller.computeTaskForExecutors(
-        stageIdToInfo(stageId).numTasks, stageIdToCore(stageId))(executorAssigned.executorId.toInt))
+      coreToStart,
+      taskToCompute)
   }
 }

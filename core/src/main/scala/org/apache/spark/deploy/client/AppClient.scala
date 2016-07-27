@@ -176,12 +176,6 @@ private[spark] class AppClient(
           cores))
         listener.executorAdded(fullId, workerId, hostPort, cores, memory)
 
-      case ExecutorScaled(id: Int, workerId: String, hostPort: String, cores: Int) =>
-        val fullId = appId + "/" + id
-        logInfo("Executor scaled: %s on %s (%s) with %d cores".format(fullId, workerId, hostPort,
-          cores))
-        listener.executorScaled(fullId, workerId, hostPort, cores)
-
       case ExecutorUpdated(id, state, message, exitStatus) =>
         val fullId = appId + "/" + id
         val messageText = message.map(s => " (" + s + ")").getOrElse("")

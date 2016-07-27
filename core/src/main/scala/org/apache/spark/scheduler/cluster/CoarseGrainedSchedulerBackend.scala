@@ -143,6 +143,19 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
 
       case Bind(executorId, stageId) =>
           scheduler.bind(executorId, stageId)
+
+      case ExecutorScaled(execId, cores) =>
+        executorDataMap.get(execId) match {
+          case Some(executorData) =>
+            val newFreeCores = if (executorData.freeCores - cores > 0)
+              { executorData.freeCores - cores }
+                else 0
+            executorDataMap (execId) = new ExecutorData(executorData.executorEndpoint,
+              executorData.executorAddress, executorData.executorHost,
+              newFreeCores, cores, executorData.logUrlMap)
+          case None =>
+            logWarning(s"Scaled not registered executorID $execId")
+        }
     }
 
     override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {

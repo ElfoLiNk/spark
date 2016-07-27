@@ -28,13 +28,10 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.Random
-
 import org.apache.hadoop.fs.Path
-
 import org.apache.spark.rpc._
 import org.apache.spark.{Logging, SecurityManager, SparkConf, SparkException}
-import org.apache.spark.deploy.{ApplicationDescription, DriverDescription,
-  ExecutorState, SparkHadoopUtil}
+import org.apache.spark.deploy.{ApplicationDescription, DriverDescription, ExecutorState, SparkHadoopUtil}
 import org.apache.spark.deploy.DeployMessages._
 import org.apache.spark.deploy.history.HistoryServer
 import org.apache.spark.deploy.master.DriverState.DriverState
@@ -42,10 +39,11 @@ import org.apache.spark.deploy.master.MasterMessages._
 import org.apache.spark.deploy.master.ui.MasterWebUI
 import org.apache.spark.deploy.rest.StandaloneRestServer
 import org.apache.spark.metrics.MetricsSystem
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{NeededCoreForExecutors, ScaleExecutor, ExecutorScaled}
 import org.apache.spark.scheduler.{EventLoggingListener, ReplayListenerBus}
 import org.apache.spark.serializer.{JavaSerializer, Serializer}
 import org.apache.spark.ui.SparkUI
-import org.apache.spark.util.{ThreadUtils, SignalLogger, Utils}
+import org.apache.spark.util.{SignalLogger, ThreadUtils, Utils}
 
 private[deploy] class Master(
     override val rpcEnv: RpcEnv,
@@ -495,6 +493,18 @@ private[deploy] class Master(
     case KillExecutors(appId, executorIds) =>
       val formattedExecutorIds = formatExecutorIds(executorIds)
       context.reply(handleKillExecutors(appId, formattedExecutorIds))
+
+    case NeededCoreForExecutors(stageId, coreForExecutors, appname) =>
+      val awsExecutor = new AWSExecutor()
+      // TODO: check workers used by app and what provider are master using
+      if (workers.size < coreForExecutors.size) {
+        // awsExecutor.create_vms(coreForExecutors.size - workers.size, masterUrl)
+      }
+
+      if (workers.size > coreForExecutors.size) {
+         // awsExecutor.delete_vms(workers.toList.drop(coreForExecutors.size))
+      }
+
   }
 
   override def onDisconnected(address: RpcAddress): Unit = {
@@ -742,10 +752,9 @@ private[deploy] class Master(
   private def scaleExecutor(worker: WorkerInfo, exec: ExecutorDesc): Unit = {
     logInfo("Scaling executor " + exec.fullId + " on worker " + worker.id)
     worker.scaleExecutor(exec)
-    worker.endpoint.send(ScaleExecutor(masterUrl,
-      exec.application.id, exec.id, exec.application.desc, exec.cores))
+    worker.endpoint.send(ScaleExecutor(exec.application.id, exec.id.toString, exec.cores))
     exec.application.driver.send(
-      ExecutorScaled(exec.id, worker.id, worker.hostPort, exec.cores))
+      ExecutorScaled(exec.id.toString, exec.cores))
   }
 
   private def registerWorker(worker: WorkerInfo): Boolean = {
