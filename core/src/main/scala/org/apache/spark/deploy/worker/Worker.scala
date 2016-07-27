@@ -588,6 +588,7 @@ private[deploy] class Worker(
       execIdToProxy(executorId).totalTask = tasks
       execIdToProxy(executorId).controllerExecutor = controllerExecutor
       onScaleExecutor(appId, executorId.toInt, "", core)
+      controllerExecutor.start()
 
   }
 
