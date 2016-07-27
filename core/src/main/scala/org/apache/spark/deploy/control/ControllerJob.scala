@@ -22,6 +22,7 @@ import org.apache.spark.{Logging, SecurityManager, SparkConf}
 import org.apache.spark.rpc.{RpcAddress, RpcEnv, ThreadSafeRpcEndpoint}
 import org.apache.spark.scheduler.StageInfo
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{InitControllerExecutor, NeededCoreForExecutors}
+import scala.collection.mutable.HashMap
 
 class ControllerJob
 (deadlineJob: Long, alpha: Double, nominalRate: Double, overscale: Int) extends Logging {
@@ -32,7 +33,7 @@ class ControllerJob
   val numMaxExecutor: Int = 4
   val OVERSCALE = overscale
   var numExecutor = 0
-  var coreForExecutor = new scala.collection.mutable.HashMap[Int, Int]
+  var coreForExecutor = new HashMap[Int, Int]
 
 
   val conf = new SparkConf
@@ -49,7 +50,7 @@ class ControllerJob
 
   def computeDeadlineStage(stage: StageInfo, weight: Long): Long = {
     if (weight != 0) {
-      (alphaDeadline - stage.submissionTime.get) / weight
+      return (alphaDeadline - stage.submissionTime.get) / weight
     }
     alphaDeadline
   }
@@ -62,18 +63,19 @@ class ControllerJob
 
   def computeDeadlineFirstStage(stage: StageInfo, weight: Long): Long = {
     if (weight != 0) {
-      (alphaDeadline - stage.submissionTime.get) / weight
+      return (alphaDeadline - stage.submissionTime.get) / weight
     }
     alphaDeadline
   }
 
   def computeCoreFirstStage(stage: StageInfo): Int = {
-    val totalSize = stage.rddInfos.foldLeft(0L) {
-      (acc, rdd) => acc + rdd.memSize + rdd.diskSize + rdd.externalBlockStoreSize
-    }
-    logInfo(stage.rddInfos.toString)
-    logInfo("TotalSize RDD First Stage: " + totalSize.toString)
-    OVERSCALE * math.ceil(totalSize * 30 / memForCore).toInt
+    // val totalSize = stage.rddInfos.foldLeft(0L) {
+    //  (acc, rdd) => acc + rdd.memSize + rdd.diskSize + rdd.externalBlockStoreSize
+    // }
+    // logInfo(stage.rddInfos.toString)
+    // logInfo("TotalSize RDD First Stage: " + totalSize.toString)
+    // OVERSCALE * math.ceil(totalSize * 30 / memForCore).toInt
+    numMaxExecutor * coreForVM * OVERSCALE
   }
 
   def computeTaskForExecutors(coresToBeAllocated: Int, totalTasksStage: Int): IndexedSeq[Int] = {

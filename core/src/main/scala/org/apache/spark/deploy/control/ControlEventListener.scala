@@ -188,16 +188,15 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
     val jobId = stageIdToActiveJobIds(stage.stageId)
 
 
-    if (firstStageId == -1) {
+    if (firstStageId == -1 && stageIdToActiveJobIds(stage.stageId).head == 0) {
       logInfo("FIRST STAGE")
       firstStageId = stage.stageId
       val controller = new ControllerJob(deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE, OVERSCALE)
       stageIdToDeadline(stage.stageId) = controller.computeDeadlineFirstStage(stage, stageWeight)
       if (!completedStages.isEmpty) {
-      stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(completedStages.toList.head)
+        stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(completedStages.toList.head)
       } else {
-      stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
-
+        stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
       }
       // ASK MASTER NEEDED EXECUTORS
       controller.askMasterNeededExecutors(
