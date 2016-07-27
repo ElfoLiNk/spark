@@ -590,11 +590,11 @@ private[deploy] class Worker(
   }
 
   def onScaleExecutor(_appId: String, execId: String, coresWanted: Int): Unit = {
+    var appId = _appId
+    if (appId.isEmpty) {
+      appId = executors.values.map(_.appId).toSet.head
+    }
     try {
-      var appId = _appId
-      if (appId.isEmpty) {
-        appId = executors.values.map(_.appId).toSet.head
-      }
       val fullId = appId + "/" + execId
       var unwanted: List[Int] = List()
       coresAllocated.filterKeys((fullId) => false).values.foreach(list => unwanted = unwanted ++ list)
