@@ -21,7 +21,7 @@ import org.apache.spark.deploy.master.Master
 import org.apache.spark.{Logging, SecurityManager, SparkConf}
 import org.apache.spark.rpc.{RpcAddress, RpcEnv, ThreadSafeRpcEndpoint}
 import org.apache.spark.scheduler.StageInfo
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{Bind, InitControllerExecutor, NeededCoreForExecutors, ScaleExecutor}
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages._
 
 import scala.collection.mutable.HashMap
 
@@ -131,11 +131,11 @@ class ControllerJob
     workerEndpoint.send(ScaleExecutor(appId, executorId, core))
   }
 
-  def bind(
-            workerUrl: String, executorId: String, stageId: Long): Unit = {
+  def bindwithtasks(
+            workerUrl: String, executorId: String, stageId: Long, tasks: Int): Unit = {
     val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
-    workerEndpoint.send(Bind(
-      executorId, stageId.toInt))
+    workerEndpoint.send(BindWithTasks(
+      executorId, stageId.toInt, tasks))
     logInfo("SEND BIND TO WORKER %s, %s".format
     (executorId, stageId))
   }

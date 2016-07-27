@@ -32,6 +32,9 @@ private[spark] object CoarseGrainedClusterMessages {
 
   case class Bind(executorId: String, stageId: Int) extends CoarseGrainedClusterMessage
 
+  case class BindWithTasks
+  (executorId: String, stageId: Int, tasks: Int) extends CoarseGrainedClusterMessage
+
   case class UnBind(executorId: String, stageId: Int) extends CoarseGrainedClusterMessage
 
   case class ScaleExecutor(

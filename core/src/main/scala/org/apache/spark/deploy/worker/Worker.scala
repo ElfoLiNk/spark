@@ -36,7 +36,7 @@ import org.apache.spark.deploy.master.{DriverState, Master}
 import org.apache.spark.deploy.worker.ui.WorkerWebUI
 import org.apache.spark.metrics.MetricsSystem
 import org.apache.spark.rpc._
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{Bind, InitControllerExecutor, ScaleExecutor, ExecutorScaled}
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages._
 import org.apache.spark.util.{SignalLogger, ThreadUtils, Utils}
 
 private[deploy] class Worker(
@@ -587,8 +587,9 @@ private[deploy] class Worker(
       execIdToProxy(executorId).controllerExecutor = controllerExecutor
       controllerExecutor.start()
 
-    case Bind(executorId, stageId) =>
+    case BindWithTasks(executorId, stageId, tasks) =>
       execIdToProxy(executorId).proxyEndpoint.send(Bind(executorId, stageId))
+      execIdToProxy(executorId).totalTask = tasks
   }
 
   def onScaleExecutor(_appId: String, execId: String, coresWanted: Int): Unit = {

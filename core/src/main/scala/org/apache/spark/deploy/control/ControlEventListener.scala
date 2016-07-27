@@ -477,7 +477,9 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         coreToStart,
         taskToCompute)
     } else {
-      controller.bind(workerUrl, executorAssigned.executorId, stageId)
+      val taskForExecutorId = controller.computeTaskForExecutors(stageIdToCore(stageId),
+        stageIdToInfo(stageId).numTasks)(executorAssigned.executorId.toInt)
+      controller.bindwithtasks(workerUrl, executorAssigned.executorId, stageId, taskForExecutorId)
       controller.scaleExecutor(
         workerUrl, "", executorAssigned.executorId, stageIdToCore(stageId) / controller.coreForVM)
     }
