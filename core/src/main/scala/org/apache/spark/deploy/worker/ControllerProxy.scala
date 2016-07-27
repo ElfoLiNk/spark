@@ -5,7 +5,7 @@ import org.apache.spark.rpc._
 import org.apache.spark._
 import org.apache.spark.scheduler.TaskDescription
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages._
-import org.apache.spark.serializer.SerializerInstance
+import org.apache.spark.serializer.JavaSerializer
 import org.apache.spark.util.{ThreadUtils, Utils}
 
 import scala.collection.mutable.HashMap
@@ -28,7 +28,7 @@ class ControllerProxy
   val securityMgr = new SecurityManager(conf)
   val rpcEnv = RpcEnv.create("Controller", rpcEnvWorker.address.host, 5555, conf, securityMgr)
 
-  // private val closureSerializer = SparkEnv.get.closureSerializer.newInstance()
+  private val javaSerializer = new JavaSerializer(new SparkConf).newInstance()
 
   def start() {
     proxyEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME, createProxyEndpoint(driverUrl))
@@ -73,8 +73,8 @@ class ControllerProxy
 
       case LaunchTask(data) =>
         if (taskLaunched == totalTask) {
-          // val taskDesc = closureSerializer.deserialize[TaskDescription](data.value)
-          // driver.get.send(StatusUpdate(execId.toString, taskDesc.taskId, TaskState.FAILED, data))
+          val taskDesc = javaSerializer.deserialize[TaskDescription](data.value)
+          driver.get.send(StatusUpdate(execId.toString, taskDesc.taskId, TaskState.FAILED, data))
         } else {
           executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(data))
           taskLaunched += 1
