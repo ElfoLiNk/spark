@@ -23,6 +23,7 @@ class ControllerProxy
   var totalTask: Int = _
   var controllerExecutor: ControllerExecutor = _
   var taskLaunched: Int = 0
+  var taskCompleted: Int = 0
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
@@ -65,6 +66,7 @@ class ControllerProxy
       case StatusUpdate(executorId, taskId, state, data) =>
         if (TaskState.isFinished(state)) {
           controllerExecutor.completedTasks += 1
+          taskCompleted += 1
           if (controllerExecutor.completedTasks == totalTask) {
             driver.get.send(ExecutorFinishedTask(executorId))
             controllerExecutor.stop()
@@ -97,13 +99,7 @@ class ControllerProxy
         driver.get.send(Bind(executorId, stageId))
 
       case ExecutorScaled(execId, cores, newFreeCores) =>
-        var deltaFreeCore = 0
-        if (controllerExecutor != None) {
-          deltaFreeCore = taskLaunched - controllerExecutor.completedTasks.toInt
-        }
-        if (deltaFreeCore == 0) {
-          deltaFreeCore = cores
-        }
+        val deltaFreeCore = cores - taskLaunched - taskCompleted
         driver.get.send(ExecutorScaled(execId, cores, deltaFreeCore))
 
 
