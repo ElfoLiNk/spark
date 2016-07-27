@@ -10,7 +10,8 @@ import org.apache.spark.Logging
   * Created by Matteo on 21/07/2016.
   */
 class ControllerExecutor
-   (deadline: Long, coreMin: Int, coreMax: Int, _tasks: Int, core: Int) extends Logging {
+   (executorId: String, deadline: Long,
+    coreMin: Int, coreMax: Int, _tasks: Int, core: Int) extends Logging {
 
   val K: Int = 50
   val Ts: Int = 2000 // Sampling Time
@@ -25,6 +26,7 @@ class ControllerExecutor
   var cs: Double = 0.0
 
   val timer = new Timer()
+  var oldCore = core
 
   def function2TimerTask(f: () => Unit): TimerTask = new TimerTask {
     def run() = f()
@@ -33,8 +35,14 @@ class ControllerExecutor
   def start(): Unit = {
     def timerTask() = {
       if (SP < 1) SP += Ts / deadline.toDouble
+      val nextCore: Int = nextAllocation()
+      if (nextCore != oldCore) {
+        oldCore = nextCore
+        worker.onScaleExecutor(nextCore)
+      }
+
       logInfo("SP Updated: " + SP.toString)
-      logInfo("CoreToAllocate: " + nextAllocation().toString)
+      logInfo("CoreToAllocate: " + nextCore.toString)
       logInfo("Completed Task: " + completedTasks.toInt.toString)
     }
     timer.schedule(function2TimerTask(timerTask), 0, Ts)
