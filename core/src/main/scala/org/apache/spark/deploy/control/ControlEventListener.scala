@@ -138,7 +138,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         }
       }
     }
-    firstStageId = -1
+    // firstStageId = -1
     jobIdToController(jobEnd.jobId).stop()
     jobIdToController.remove(jobEnd.jobId)
   }
