@@ -97,7 +97,10 @@ class ControllerProxy
         driver.get.send(Bind(executorId, stageId))
 
       case ExecutorScaled(execId, cores, newFreeCores) =>
-        var deltaFreeCore = taskLaunched - controllerExecutor.completedTasks.toInt
+        var deltaFreeCore = 0
+        if (controllerExecutor != None) {
+          deltaFreeCore = taskLaunched - controllerExecutor.completedTasks.toInt
+        }
         if (deltaFreeCore == 0) {
           deltaFreeCore = cores
         }
