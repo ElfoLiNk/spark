@@ -40,7 +40,8 @@ private[spark] object CoarseGrainedClusterMessages {
                             cores: Int)
     extends CoarseGrainedClusterMessage
 
-  case class ExecutorScaled(execId: String, cores: Int) extends CoarseGrainedClusterMessage
+  case class ExecutorScaled
+  (execId: String, cores: Int, newFreeCores: Int) extends CoarseGrainedClusterMessage
 
   // ControllerJob to ControllerExecutor (Worker)
   case class InitControllerExecutor

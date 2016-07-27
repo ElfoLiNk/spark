@@ -754,7 +754,7 @@ private[deploy] class Master(
     worker.scaleExecutor(exec)
     worker.endpoint.send(ScaleExecutor(exec.application.id, exec.id.toString, exec.cores))
     exec.application.driver.send(
-      ExecutorScaled(exec.id.toString, exec.cores))
+      ExecutorScaled(exec.id.toString, exec.cores, exec.cores))
   }
 
   private def registerWorker(worker: WorkerInfo): Boolean = {

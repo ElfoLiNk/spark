@@ -605,7 +605,7 @@ private[deploy] class Worker(
       logInfo("Scaled executorId %s  of appId %s to  %d Core".format(execId, appId, coresWanted))
       coresAllocated += (appId + "/" + execId -> available.take(coresWanted))
 
-      execIdToProxy(execId.toString).proxyEndpoint.send(ExecutorScaled(execId, coresWanted))
+      execIdToProxy(execId.toString).proxyEndpoint.send(ExecutorScaled(execId, coresWanted, coresWanted))
       sendToMaster(ExecutorStateChanged(appId, execId.toInt, ExecutorState.RUNNING, None, None))
     } catch {
       case e: Exception => {
