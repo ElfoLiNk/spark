@@ -462,7 +462,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       executorIdToInfo(executorAssigned.executorId).executorHost + ":9999"
     val controller = new ControllerJob(deadlineJobs(jobId.head), ALPHA, NOMINAL_RATE, OVERSCALE)
     val coreToStart = math.ceil(controller.computeCoreForExecutors(stageIdToCore(stageId))
-    (executorAssigned.executorId.toInt) / OVERSCALE).toInt
+    (executorAssigned.executorId.toInt)).toInt
     val taskToCompute = controller.computeTaskForExecutors(
       stageIdToInfo(stageId).numTasks, stageIdToCore(stageId))(executorAssigned.executorId.toInt)
     val maxCore =

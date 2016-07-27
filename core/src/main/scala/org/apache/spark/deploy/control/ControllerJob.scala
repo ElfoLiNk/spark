@@ -76,7 +76,7 @@ class ControllerJob
     // logInfo(stage.rddInfos.toString)
     // logInfo("TotalSize RDD First Stage: " + totalSize.toString)
     // OVERSCALE * math.ceil(totalSize * 30 / memForCore).toInt
-    numMaxExecutor * coreForVM * OVERSCALE
+    numMaxExecutor * coreForVM
   }
 
   def computeTaskForExecutors(coresToBeAllocated: Int, totalTasksStage: Int): IndexedSeq[Int] = {
