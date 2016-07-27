@@ -31,7 +31,7 @@ class ControllerJob(conf: SparkConf, deadlineJob: Long) extends Logging {
   val NOMINAL_RATE: Double = conf.get("spark.control.nominalrate").toDouble // 1000.0
   val OVERSCALE: Int = conf.get("spark.control.overscale").toInt // 2
 
-  val alphaDeadline: Long = (ALPHA * deadlineJob.toDouble).toLong
+  val alphaDeadline: Long = System.currentTimeMillis + (ALPHA * deadlineJob.toDouble).toLong
   val memForCore: Double = conf.get("spark.control.memcore").toDouble  // 2048000000.0
 
   val numMaxExecutor: Int = conf.get("spark.control.maxexecutor").toInt // 4
@@ -52,7 +52,7 @@ class ControllerJob(conf: SparkConf, deadlineJob: Long) extends Logging {
   }
 
   def computeDeadlineStage(stage: StageInfo, weight: Long): Long = {
-    alphaDeadline - stage.submissionTime.get / (weight + 1)
+    (alphaDeadline - stage.submissionTime.get) / (weight + 1)
   }
 
   def computeCoreStage(deadlineStage: Long, numRecord: Long): Int = {
@@ -62,7 +62,7 @@ class ControllerJob(conf: SparkConf, deadlineJob: Long) extends Logging {
   }
 
   def computeDeadlineFirstStage(stage: StageInfo, weight: Long): Long = {
-    alphaDeadline - stage.submissionTime.get / (weight + 1)
+    (alphaDeadline - stage.submissionTime.get) / (weight + 1)
   }
 
   def computeCoreFirstStage(stage: StageInfo): Int = {
