@@ -594,13 +594,15 @@ private[deploy] class Worker(
       val fullId = appId + "/" + execId
       var unwanted: List[Int] = List()
       coresAllocated.filterKeys((fullId) => false).values.foreach(list => unwanted = unwanted ++ list)
-      val available = (0 to cores - 1).toList.filterNot(unwanted.toSet)
+      val available = (0 until cores).toList.filterNot(unwanted.toSet)
+      logInfo("Core Unwanted: " + unwanted.toString)
+      logInfo("Core Available: " + available.toString)
       val cpuset = available.take(coresWanted - executors(fullId).cores).mkString(",")
       val commandUpdateDocker = Seq("docker", "update" ,
         "--cpuset-cpus='" + cpuset + "'", appId + "." + execId)
       commandUpdateDocker.!
       logInfo(commandUpdateDocker.toString)
-      logInfo("Scaled executorId %d  of appId %s to  %d Core".format(execId, appId, coresWanted))
+      logInfo("Scaled executorId %s  of appId %s to  %d Core".format(execId, appId, coresWanted))
       coresAllocated += (appId + "/" + execId -> available.take(coresWanted))
       executors(fullId).substituteVariables("CORES " + cores.toString)
 
