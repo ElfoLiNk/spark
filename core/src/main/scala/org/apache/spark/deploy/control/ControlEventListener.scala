@@ -101,7 +101,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       missingStages.map(_.numTasks).sum
     }
     jobIdToData(jobStart.jobId) = jobData
-    deadlineJobs(jobStart.jobId) = DEADLINE
+    deadlineJobs(jobStart.jobId) = System.currentTimeMillis() + DEADLINE
     activeJobs(jobStart.jobId) = jobData
     for (stageId <- jobStart.stageIds) {
       stageIdToActiveJobIds.getOrElseUpdate(stageId, new HashSet[Int]).add(jobStart.jobId)

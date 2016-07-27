@@ -25,13 +25,13 @@ import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages._
 
 import scala.collection.mutable.HashMap
 
-class ControllerJob(conf: SparkConf, deadlineJob: Long) extends Logging {
+class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Logging {
 
   val ALPHA: Double = conf.get("spark.control.alpha").toDouble // 0.8
   val NOMINAL_RATE: Double = conf.get("spark.control.nominalrate").toDouble // 1000.0
   val OVERSCALE: Int = conf.get("spark.control.overscale").toInt // 2
 
-  val alphaDeadline: Long = System.currentTimeMillis + (ALPHA * deadlineJob.toDouble).toLong
+  val alphaDeadline: Long = (ALPHA * deadlineJobMillisecond.toDouble).toLong
   val memForCore: Double = conf.get("spark.control.memcore").toDouble  // 2048000000.0
 
   val numMaxExecutor: Int = conf.get("spark.control.maxexecutor").toInt // 4
