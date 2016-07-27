@@ -580,6 +580,7 @@ private[deploy] class Worker(
 
     case InitControllerExecutor
       (appId, executorId, stageId, coreMin, coreMax, tasks, deadline, core) =>
+      execIdToProxy(executorId).sendBind(executorId, stageId)
       val controllerExecutor = new ControllerExecutor(deadline, coreMin, coreMax, tasks, core)
       logInfo("Created ControllerExecutor: %s , %d , %d , %d , %d".format
       (executorId, stageId, deadline, tasks, core))
@@ -602,7 +603,7 @@ private[deploy] class Worker(
       val available = (0 to cores - 1).toList.filterNot(unwanted.toSet)
       val cpuset = available.take(coresWanted - executors(fullId).cores).mkString(",")
       Seq("docker", "update" , "--cpuset-cpus='" + cpuset + "'", appId + "." + execId).!
-
+      logInfo("Scaled executorId %d  of appId %s to  %d Core".format(execId, appId, coresWanted))
       coresAllocated += (appId + "/" + execId -> available.take(coresWanted))
       executors(fullId).substituteVariables("CORES " + cores.toString)
 

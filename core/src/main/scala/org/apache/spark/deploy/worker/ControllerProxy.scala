@@ -43,6 +43,10 @@ class ControllerProxy
     "spark://" + ENDPOINT_NAME + "@" + proxyEndpoint.address.toString
   }
 
+  def sendBind(executorId: String, stageId: Long): Unit = {
+    proxyEndpoint.sendToDriver(Bind(executorId, stageId.toInt))
+  }
+
 
   class ProxyEndpoint(override val rpcEnv: RpcEnv,
                       driverUrl: String) extends ThreadSafeRpcEndpoint with Logging {
@@ -53,6 +57,16 @@ class ControllerProxy
 
     @volatile var driver: Option[RpcEndpointRef] = Some(rpcEnv.setupEndpointRefByURI(driverUrl))
 
+
+    def sendToDriver(message: Any): Unit = {
+      driver match {
+        case Some(ref) => ref.send(message)
+        case None =>
+          logWarning(
+            s"Dropping $message because the connection to driver has not yet been established")
+      }
+    }
+    
     override def receive: PartialFunction[Any, Unit] = {
       case StatusUpdate(executorId, taskId, state, data) =>
         if (TaskState.isFinished(state)) {

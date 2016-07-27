@@ -469,8 +469,5 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       (executorAssigned.executorId.toInt) / OVERSCALE).toInt,
       controller.computeTaskForExecutors(
         stageIdToInfo(stageId).numTasks, stageIdToCore(stageId))(executorAssigned.executorId.toInt))
-
-    logInfo(stageIdToDeadline.toString)
-    logInfo(stageIdToCore.toString)
   }
 }
