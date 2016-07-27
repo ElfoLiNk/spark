@@ -77,6 +77,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   var executorIdToInfo = new HashMap[String, ExecutorInfo]
 
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = synchronized {
+    deadlineJobs(jobStart.jobId) = System.currentTimeMillis() + DEADLINE
     val jobGroup = for (
       props <- Option(jobStart.properties);
       group <- Option(props.getProperty(SparkContext.SPARK_JOB_GROUP_ID))
@@ -101,7 +102,6 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       missingStages.map(_.numTasks).sum
     }
     jobIdToData(jobStart.jobId) = jobData
-    deadlineJobs(jobStart.jobId) = System.currentTimeMillis() + DEADLINE
     activeJobs(jobStart.jobId) = jobData
     for (stageId <- jobStart.stageIds) {
       stageIdToActiveJobIds.getOrElseUpdate(stageId, new HashSet[Int]).add(jobStart.jobId)
@@ -213,7 +213,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
             agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords }
       }
       stageIdToCore(stage.stageId) = controller.computeCoreStage(deadlineStage, numRecord)
-      
+
       // ASK MASTER NEEDED EXECUTORS
       controller.askMasterNeededExecutors(
         master, firstStageId, stageIdToCore(firstStageId), appid)
