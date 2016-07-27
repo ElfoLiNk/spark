@@ -95,6 +95,9 @@ class ControllerProxy
       case Bind(executorId, stageId) =>
         driver.get.send(Bind(executorId, stageId))
 
+      case ExecutorScaled(execId, cores) =>
+        driver.get.send(ExecutorScaled(execId, cores))
+
 
     }
 
