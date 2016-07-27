@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
   * Created by Matteo on 21/07/2016.
   */
 class ControllerProxy
-      (rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: Int) {
+(rpcEnvWorker: RpcEnv, val driverUrl: String, val execId: Int) {
 
   var proxyEndpoint: RpcEndpointRef = _
   val ENDPOINT_NAME: String =
@@ -27,8 +27,6 @@ class ControllerProxy
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
   val rpcEnv = RpcEnv.create("Controller", rpcEnvWorker.address.host, 5555, conf, securityMgr)
-
-  private val javaSerializer = new JavaSerializer(new SparkConf).newInstance()
 
   def start() {
     proxyEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME, createProxyEndpoint(driverUrl))
@@ -42,7 +40,6 @@ class ControllerProxy
   def getAddress: String = {
     "spark://" + ENDPOINT_NAME + "@" + proxyEndpoint.address.toString
   }
-
 
 
   class ProxyEndpoint(override val rpcEnv: RpcEnv,
@@ -83,18 +80,17 @@ class ControllerProxy
         executorRefMap(
           executorIdToAddress(execId.toString).host).send(RegisterExecutorFailed(message))
 
-      case LaunchTask(data) =>
+      case LaunchTask(taskId, data) =>
         if (taskLaunched == totalTask) {
-          val taskDesc = javaSerializer.deserialize[TaskDescription](data.value)
-          driver.get.send(StatusUpdate(execId.toString, taskDesc.taskId, TaskState.FAILED, data))
+          driver.get.send(StatusUpdate(execId.toString, taskId, TaskState.FAILED, data))
         } else {
-          executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(data))
+          executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(taskId, data))
           taskLaunched += 1
         }
 
       case StopExecutor =>
-          logInfo("Asked to terminate Executor")
-          executorRefMap(executorIdToAddress(execId.toString).host).send(StopExecutor)
+        logInfo("Asked to terminate Executor")
+        executorRefMap(executorIdToAddress(execId.toString).host).send(StopExecutor)
 
       case Bind(executorId, stageId) =>
         driver.get.send(Bind(executorId, stageId))

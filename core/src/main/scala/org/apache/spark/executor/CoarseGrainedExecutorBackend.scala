@@ -86,7 +86,7 @@ private[spark] class CoarseGrainedExecutorBackend(
       logError("Slave registration failed: " + message)
       System.exit(1)
 
-    case LaunchTask(data) =>
+    case LaunchTask(taskId, data) =>
       if (executor == null) {
         logError("Received LaunchTask command but executor was null")
         System.exit(1)
