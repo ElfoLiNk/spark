@@ -32,7 +32,7 @@ class ControllerExecutor
 
   def start(): Unit = {
     def timerTask() = {
-      SP += Ts / deadline.toDouble
+      if (SP < 1) SP += Ts / deadline.toDouble
       logInfo("SP Updated: " + SP.toString)
       logInfo("CoreToAllocate: " + nextAllocation().toString)
       logInfo("Completed Task: " + completedTasks.toInt.toString)
