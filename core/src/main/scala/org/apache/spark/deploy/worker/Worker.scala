@@ -36,7 +36,7 @@ import org.apache.spark.deploy.master.{DriverState, Master}
 import org.apache.spark.deploy.worker.ui.WorkerWebUI
 import org.apache.spark.metrics.MetricsSystem
 import org.apache.spark.rpc._
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.InitControllerExecutor
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{Bind, InitControllerExecutor}
 import org.apache.spark.util.{SignalLogger, ThreadUtils, Utils}
 
 private[deploy] class Worker(
@@ -580,7 +580,7 @@ private[deploy] class Worker(
 
     case InitControllerExecutor
       (appId, executorId, stageId, coreMin, coreMax, tasks, deadline, core) =>
-      execIdToProxy(executorId).sendBind(executorId, stageId)
+      execIdToProxy(executorId).proxyEndpoint.send(Bind(executorId, stageId.toInt))
       val controllerExecutor = new ControllerExecutor(deadline, coreMin, coreMax, tasks, core)
       logInfo("Created ControllerExecutor: %s , %d , %d , %d , %d".format
       (executorId, stageId, deadline, tasks, core))

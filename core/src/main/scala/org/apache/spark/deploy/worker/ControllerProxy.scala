@@ -43,9 +43,6 @@ class ControllerProxy
     "spark://" + ENDPOINT_NAME + "@" + proxyEndpoint.address.toString
   }
 
-  def sendBind(executorId: String, stageId: Long): Unit = {
-    proxyEndpoint.sendToDriver(Bind(executorId, stageId.toInt))
-  }
 
 
   class ProxyEndpoint(override val rpcEnv: RpcEnv,
@@ -66,7 +63,7 @@ class ControllerProxy
             s"Dropping $message because the connection to driver has not yet been established")
       }
     }
-    
+
     override def receive: PartialFunction[Any, Unit] = {
       case StatusUpdate(executorId, taskId, state, data) =>
         if (TaskState.isFinished(state)) {
@@ -98,6 +95,11 @@ class ControllerProxy
       case StopExecutor =>
           logInfo("Asked to terminate Executor")
           executorRefMap(executorIdToAddress(execId.toString).host).send(StopExecutor)
+
+      case Bind(executorId, stageId) =>
+        driver.get.send(Bind(executorId, stageId))
+
+
     }
 
     override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
