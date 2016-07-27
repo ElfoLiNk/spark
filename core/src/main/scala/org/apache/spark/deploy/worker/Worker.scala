@@ -513,7 +513,7 @@ private[deploy] class Worker(
       }
 
     case ScaleExecutor(appId, execId, cores_) =>
-          logInfo("Asked to scale executor %s/%d".format(appId, execId))
+          logInfo("Asked to scale executor %s/%s".format(appId, execId))
           onScaleExecutor(appId, execId, cores_)
 
 
