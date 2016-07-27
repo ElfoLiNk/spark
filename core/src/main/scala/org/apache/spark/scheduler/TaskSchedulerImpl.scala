@@ -454,7 +454,7 @@ private[spark] class TaskSchedulerImpl(
   def bind(executorId: String, stageId: Int): Unit = {
     logInfo("BINDING EXEXUTOR ID: %s TO STAGEID %d".format(executorId, stageId))
     execIdToTaskSet(executorId) = stageId
-    sc.listenerBus.post(SparkListenerExecutorAssigned(executorId, stageId))
+    // sc.listenerBus.post(SparkListenerExecutorAssigned(executorId, stageId))
   }
 
   def unbind(executorId: String): Unit = {

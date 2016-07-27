@@ -444,6 +444,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   override def onExecutorAdded(executorAdded: SparkListenerExecutorAdded): Unit = synchronized {
     executorAvailable += executorAdded.executorId
     executorIdToInfo(executorAdded.executorId) = executorAdded.executorInfo
+    onExecutorAssigned(new SparkListenerExecutorAssigned(executorAdded.executorId, activeStages.head._2.stageId)
   }
 
 
