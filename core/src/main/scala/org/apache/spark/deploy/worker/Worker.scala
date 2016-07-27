@@ -622,36 +622,38 @@ private[deploy] class Worker(
     }
 
     def onExecutorScaled(executorId: String, coresWanted: Int): Unit = {
-      val appId = executors.values.map(_.appId).toSet.head
-      val fullId = appId + "/" + execId
-      var unwanted: List[Int] = List()
-      coresAllocated.filterKeys((fullId) => false).values.foreach(list => unwanted = unwanted ++ list)
-      val available = (0 until cores).toList.filterNot(unwanted.toSet)
-      logInfo("Core Unwanted: " + unwanted.toString)
-      logInfo("Core Available: " + available.toString)
-      val cpuset = available.take(coresWanted).mkString(",")
-      val commandUpdateDocker = Seq("docker", "update" ,
-        "--cpuset-cpus='" + cpuset + "'", appId + "." + execId)
-      commandUpdateDocker.!
-      logInfo(commandUpdateDocker.toString)
-      logInfo("Scaled executorId %s  of appId %s to  %d Core".format(execId, appId, coresWanted))
-      coresAllocated += (appId + "/" + execId -> available.take(coresWanted))
+      try {
+        val appId = executors.values.map(_.appId).toSet.head
+        val fullId = appId + "/" + execId
+        var unwanted: List[Int] = List()
+        coresAllocated.filterKeys((fullId) => false).values.foreach(list => unwanted = unwanted ++ list)
+        val available = (0 until cores).toList.filterNot(unwanted.toSet)
+        logInfo("Core Unwanted: " + unwanted.toString)
+        logInfo("Core Available: " + available.toString)
+        val cpuset = available.take(coresWanted).mkString(",")
+        val commandUpdateDocker = Seq("docker", "update",
+          "--cpuset-cpus='" + cpuset + "'", appId + "." + execId)
+        commandUpdateDocker.!
+        logInfo(commandUpdateDocker.toString)
+        logInfo("Scaled executorId %s  of appId %s to  %d Core".format(execId, appId, coresWanted))
+        coresAllocated += (appId + "/" + execId -> available.take(coresWanted))
 
-      execIdToProxy(execId.toString).proxyEndpoint.send(ExecutorScaled(execId, coresWanted, coresWanted))
-      sendToMaster(ExecutorStateChanged(appId, execId.toInt, ExecutorState.RUNNING, None, None))
-    } catch {
-      case e: Exception => {
-        logError(s"Failed to scale executor $appId/$execId ", e)
-        if (executors.contains(appId + "/" + execId)) {
-          executors(appId + "/" + execId).kill()
-          val exitCode = Seq("docker", "stop" , appId + "." + execId).!
-          executors -= appId + "/" + execId
-          coresAllocated -= appId + "/" + execId
+        execIdToProxy(execId.toString).proxyEndpoint.send(ExecutorScaled(execId, coresWanted, coresWanted))
+        sendToMaster(ExecutorStateChanged(appId, execId.toInt, ExecutorState.RUNNING, None, None))
+
+      } catch {
+        case e: Exception => {
+          logError(s"Failed to scale executor $appId/$execId ", e)
+          if (executors.contains(appId + "/" + execId)) {
+            executors(appId + "/" + execId).kill()
+            val exitCode = Seq("docker", "stop", appId + "." + execId).!
+            executors -= appId + "/" + execId
+            coresAllocated -= appId + "/" + execId
+          }
+          sendToMaster(ExecutorStateChanged(appId, execId.toInt, ExecutorState.FAILED,
+            Some(e.toString), None))
         }
-        sendToMaster(ExecutorStateChanged(appId, execId.toInt, ExecutorState.FAILED,
-          Some(e.toString), None))
       }
-    }
 
   }
 
