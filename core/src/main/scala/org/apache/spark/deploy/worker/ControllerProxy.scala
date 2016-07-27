@@ -82,7 +82,7 @@ class ControllerProxy
 
       case LaunchTask(taskId, data) =>
         if (taskLaunched == totalTask) {
-          driver.get.send(StatusUpdate(execId.toString, taskId, TaskState.FAILED, data))
+          driver.get.send(StatusUpdate(execId.toString, taskId, TaskState.KILLED, data))
         } else {
           executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(taskId, data))
           taskLaunched += 1
