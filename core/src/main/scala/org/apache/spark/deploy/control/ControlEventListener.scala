@@ -43,6 +43,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
 
 
   val DEADLINE: Int = conf.get("spark.control.deadline").toInt // 1000000
+  var executorNeeded: Int = conf.get("spark.control.maxexecutor").toInt
 
   // Master
   def master: String = conf.get("spark.master")
@@ -75,7 +76,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   var stageIdToExecId = new HashMap[Long, Set[String]].withDefaultValue(Set())
   var executorIdToInfo = new HashMap[String, ExecutorInfo]
 
-  var executorNeeded: Int = 1
+
 
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = synchronized {
     deadlineJobs(jobStart.jobId) = System.currentTimeMillis() + DEADLINE
