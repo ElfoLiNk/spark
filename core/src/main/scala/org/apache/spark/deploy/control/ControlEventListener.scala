@@ -147,10 +147,11 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = synchronized {
     val jobId = stageIdToActiveJobIds(stageCompleted.stageInfo.stageId)
     val controller = jobIdToController(jobId.head)
-    val execid = stageIdToExecId(stageCompleted.stageInfo.stageId).head
-    val workerUrl = "spark://Worker@" +
-      executorIdToInfo(execid).executorHost + ":9999"
-    controller.unbind(workerUrl, execid, stageCompleted.stageInfo.stageId)
+    for (execid <- stageIdToExecId(stageCompleted.stageInfo.stageId)) {
+      val workerUrl = "spark://Worker@" +
+        executorIdToInfo(execid).executorHost + ":9999"
+      controller.unbind(workerUrl, execid, stageCompleted.stageInfo.stageId)
+    }
     val stage = stageCompleted.stageInfo
     stageIdToInfo(stage.stageId) = stage
     val stageData = stageIdToData.getOrElseUpdate((stage.stageId, stage.attemptId), {
