@@ -233,9 +233,6 @@ private[spark] class TaskSchedulerImpl(
       taskSetsForStage -= manager.taskSet.stageAttemptId
       if (taskSetsForStage.isEmpty) {
         taskSetsByStageIdAndAttempt -= manager.taskSet.stageId
-        taskSetToExecId(manager.taskSet.stageId).foreach(execIdToTaskSet(_) = 0)
-        taskSetToExecId.remove(manager.taskSet.stageId)
-
       }
     }
     manager.parent.removeSchedulable(manager)
@@ -254,6 +251,8 @@ private[spark] class TaskSchedulerImpl(
       val execId = shuffledOffers(i).executorId
       val host = shuffledOffers(i).host
       val stageId = taskSet.stageId
+      logInfo("CPU FREE: %d, EID %s, SID, %d, ASSIGNED SID %d".format(availableCpus(i),
+        execId, stageId, execIdToTaskSet(execId)))
       if (availableCpus(i) >= CPUS_PER_TASK && execIdToTaskSet(execId) == stageId) {
         try {
           for (task <- taskSet.resourceOffer(execId, host, maxLocality)) {
@@ -266,10 +265,6 @@ private[spark] class TaskSchedulerImpl(
             availableCpus(i) -= CPUS_PER_TASK
             assert(availableCpus(i) >= 0)
             launchedTask = true
-            if (execIdToTaskSet(execId) != stageId) {
-              execIdToTaskSet(execId) = stageId
-              taskSetToExecId(stageId) += execId
-            }
           }
         } catch {
           case e: TaskNotSerializableException =>
