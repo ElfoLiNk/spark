@@ -591,6 +591,10 @@ private[deploy] class Worker(
     case BindWithTasks(executorId, stageId, tasks) =>
       execIdToProxy(executorId).proxyEndpoint.send(Bind(executorId, stageId))
       execIdToProxy(executorId).totalTask = tasks
+
+    case UnBind(executorId, stageId) =>
+      execIdToProxy(executorId).proxyEndpoint.send(UnBind(executorId, stageId))
+      execIdToProxy(executorId).totalTask = 0
   }
 
   def onScaleExecutor(_appId: String, execId: String, coresWanted: Int): Unit = {
