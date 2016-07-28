@@ -99,7 +99,14 @@ class ControllerProxy
 
       case Bind(executorId, stageId) =>
         driver.get.send(Bind(executorId, stageId))
+        taskCompleted = 0
+        taskLaunched = 0
 
+      case UnBind(executorId, stageId) =>
+        driver.get.send(UnBind(executorId, stageId))
+        taskCompleted = 0
+        taskLaunched = 0
+        
       case ExecutorScaled(execId, cores, newFreeCores) =>
         val deltaFreeCore = cores - taskLaunched - taskCompleted
         driver.get.send(ExecutorScaled(execId, cores, deltaFreeCore))
