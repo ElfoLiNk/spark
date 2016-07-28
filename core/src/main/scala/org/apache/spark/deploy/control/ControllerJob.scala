@@ -144,8 +144,8 @@ class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Loggi
     val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
     workerEndpoint.send(BindWithTasks(
       executorId, stageId.toInt, tasks))
-    logInfo("SEND BIND TO WORKER %s, %s".format
-    (executorId, stageId))
+    logInfo("SEND BIND TO WORKER EID %s, SID %s WITH TASKS %d".format
+    (executorId, stageId, tasks))
   }
 
   def initControllerExecutor(
