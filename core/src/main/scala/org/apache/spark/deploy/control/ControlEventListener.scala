@@ -209,10 +209,10 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
         (agg, x) =>
           agg + stageIdToData(x, 0).outputRecords + stageIdToData(x, 0).shuffleWriteRecords }
       if (numRecord == 0) {
-        val totalSize = stageIdToInfo(0).rddInfos.foldLeft(0L) {
-          (acc, rdd) => acc + rdd.memSize + rdd.diskSize + rdd.externalBlockStoreSize
-        }
-        stageIdToCore(stage.stageId) = controller.computeCoreStageFromSize(deadlineStage, totalSize)
+        // val totalSize = stageIdToInfo(0).rddInfos.foldLeft(0L) {
+        //  (acc, rdd) => acc + rdd.memSize + rdd.diskSize + rdd.externalBlockStoreSize
+        // }
+        stageIdToCore(stage.stageId) = controller.computeCoreFirstStage(stage)
       } else {
         stageIdToCore(stage.stageId) = controller.computeCoreStage(deadlineStage, numRecord)
       }
@@ -456,7 +456,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   override def onExecutorAdded(executorAdded: SparkListenerExecutorAdded): Unit = synchronized {
     executorAvailable += executorAdded.executorId
     executorIdToInfo(executorAdded.executorId) = executorAdded.executorInfo
-    
+
     if (executorAvailable.size >= executorNeeded) {
       // LAUNCH BIND
       for (exec <- executorAvailable.toList)
