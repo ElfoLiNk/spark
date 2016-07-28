@@ -119,6 +119,9 @@ class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Loggi
     numExecutor = math.ceil(coresToBeAllocated.toDouble / coreForVM.toDouble).toInt
 
     if (numExecutor > numMaxExecutor) {
+      logError("NUM EXECUTORS TOO HIGH: %d > NUM MAX EXECUTORS %d".format(
+        numExecutor , numMaxExecutor
+      ))
       numExecutor = numMaxExecutor
       val coreForExecutors = (1 to numExecutor).map {
         i => coreForVM
