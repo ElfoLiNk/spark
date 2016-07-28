@@ -106,8 +106,6 @@ class ControllerProxy
 
       case UnBind(executorId, stageId) =>
         driver.get.send(UnBind(executorId, stageId))
-        taskCompleted = 0
-        taskLaunched = 0
         if (controllerExecutor != null) controllerExecutor.stop()
 
       case ExecutorScaled(execId, cores, newFreeCores) =>
