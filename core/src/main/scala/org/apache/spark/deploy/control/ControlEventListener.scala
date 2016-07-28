@@ -470,7 +470,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
       for (exec <- executorAvailable.toList)
       {
         onExecutorAssigned(
-          new SparkListenerExecutorAssigned(executorAdded.executorId, activeStages.head._2.stageId))
+          new SparkListenerExecutorAssigned(exec, activeStages.head._2.stageId))
 
       }
     }
