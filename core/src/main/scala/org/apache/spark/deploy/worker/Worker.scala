@@ -613,11 +613,11 @@ private[deploy] class Worker(
       val commandUpdateDocker = Seq("docker", "update" ,
         "--cpuset-cpus='" + cpuset + "'", appId + "." + execId)
       commandUpdateDocker.!
+      execIdToProxy(execId.toString).proxyEndpoint.send(ExecutorScaled(execId, coresWanted, coresWanted))
       logInfo(commandUpdateDocker.toString)
       logInfo("Scaled executorId %s  of appId %s to  %d Core".format(execId, appId, coresWanted))
+      
       coresAllocated += (appId + "/" + execId -> available.take(coresWanted))
-
-      execIdToProxy(execId.toString).proxyEndpoint.send(ExecutorScaled(execId, coresWanted, coresWanted))
       sendToMaster(ExecutorStateChanged(appId, execId.toInt, ExecutorState.RUNNING, None, None))
     } catch {
       case e: Exception => {
