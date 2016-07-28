@@ -11,8 +11,8 @@ import org.apache.spark.{Logging, SparkConf}
   * Created by Matteo on 21/07/2016.
   */
 class ControllerExecutor
-   (conf: SparkConf, executorId: String, deadline: Long,
-    coreMin: Int, coreMax: Int, _tasks: Int, core: Int) extends Logging {
+(conf: SparkConf, executorId: String, deadline: Long,
+ coreMin: Int, coreMax: Int, _tasks: Int, core: Int) extends Logging {
 
   val K: Int = conf.get("spark.control.k").toInt // 50
   val Ts: Long = conf.get("spark.control.tsample").toLong // Sampling Time Ms 2000
@@ -37,14 +37,16 @@ class ControllerExecutor
     def timerTask() = {
       if (SP < 1) SP += Ts / deadline.toDouble
       val nextCore: Int = nextAllocation()
+
+      logInfo("SP Updated: " + (SP - (SP % 0.01)).toString)
+      logInfo("Real: " + (completedTasks / tasks).toString)
+      logInfo("CoreToAllocate: " + nextCore.toString)
+
       if (nextCore != oldCore) {
         oldCore = nextCore
         worker.onScaleExecutor("", executorId, nextCore)
       }
 
-      logInfo("SP Updated: " + (SP - (SP % 0.01)).toString)
-      logInfo("Real: " + (completedTasks / tasks).toString)
-      logInfo("CoreToAllocate: " + nextCore.toString)
     }
     timer.schedule(function2TimerTask(timerTask), 0, Ts)
   }
