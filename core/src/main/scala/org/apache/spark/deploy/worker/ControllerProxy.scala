@@ -110,7 +110,7 @@ class ControllerProxy
         taskLaunched = 0
 
       case ExecutorScaled(execId, cores, newFreeCores) =>
-        val deltaFreeCore = cores - taskLaunched - taskCompleted
+        val deltaFreeCore = cores - (taskLaunched - taskCompleted)
         driver.get.send(ExecutorScaled(execId, cores, deltaFreeCore))
 
 
