@@ -24,6 +24,7 @@ class ControllerProxy
   var controllerExecutor: ControllerExecutor = _
   var taskLaunched: Int = 0
   var taskCompleted: Int = 0
+  var taskFailed: Int = 0
 
   val conf = new SparkConf
   val securityMgr = new SecurityManager(conf)
@@ -64,10 +65,10 @@ class ControllerProxy
 
     override def receive: PartialFunction[Any, Unit] = {
       case StatusUpdate(executorId, taskId, state, data) =>
-        if (TaskState.isFinished(state)) {
+        if (state == TaskState.FINISHED) {
           if (controllerExecutor != null) controllerExecutor.completedTasks += 1
           taskCompleted += 1
-          logInfo("EID: %s, Completed: %d, Launched: %d, Total: %d".format(executorId,
+          logDebug("EID: %s, Completed: %d, Launched: %d, Total: %d".format(executorId,
             taskCompleted, taskLaunched, totalTask))
           if (taskCompleted == totalTask) {
             driver.get.send(ExecutorFinishedTask(executorId))
@@ -76,6 +77,10 @@ class ControllerProxy
             totalTask = 0
             if (controllerExecutor != null) controllerExecutor.stop()
           }
+        }
+        if ((TaskState.LOST == state) || (TaskState.FAILED == state)
+          || (TaskState.KILLED == state)){
+          taskFailed += 1
         }
         driver.get.send(StatusUpdate(executorId, taskId, state, data))
 
@@ -88,11 +93,12 @@ class ControllerProxy
           executorIdToAddress(execId.toString).host).send(RegisterExecutorFailed(message))
 
       case LaunchTask(taskId, data) =>
-        if (taskLaunched >= totalTask) {
+        if (taskLaunched >= totalTask && taskFailed == 0) {
           driver.get.send(StatusUpdate(execId.toString, taskId, TaskState.KILLED, data))
         } else {
           executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(taskId, data))
           taskLaunched += 1
+          if (taskFailed > 0) taskFailed -= 1
         }
 
       case StopExecutor =>
