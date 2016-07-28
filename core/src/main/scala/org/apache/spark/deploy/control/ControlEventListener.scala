@@ -463,7 +463,7 @@ class ControlEventListener(conf: SparkConf) extends SparkListener with Logging {
   override def onExecutorAdded(executorAdded: SparkListenerExecutorAdded): Unit = synchronized {
     executorAvailable += executorAdded.executorId
     executorIdToInfo(executorAdded.executorId) = executorAdded.executorInfo
-
+    logInfo("EXECUTOR AVAILABLE: " + executorAvailable.toString)
     if (executorAvailable.size >= executorNeeded) {
       // LAUNCH BIND
       for (exec <- executorAvailable.toList)
