@@ -41,7 +41,7 @@ class AWSProvider extends CloudProvider with Logging {
       // scalastyle:off line.size.limit
       instance.withKeyPair(new java.io.File("key_pair_file")) { i =>
         i.ssh { ssh =>
-          ssh.exec("mkdir /tmp/spark-events && /usr/local/spark/sbin/start-slave.sh %s --port 9999".format(masterUrl)).right.map {
+          ssh.exec("/usr/local/spark/sbin/start-slave.sh %s --port 9999 && sudo ./disable-ht.sh".format(masterUrl)).right.map {
             result => logInfo(s"IstanceId: ${i.instanceId} Result: " + result.stdOutAsString())
           }
         }

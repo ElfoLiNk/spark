@@ -498,7 +498,7 @@ private[deploy] class Master(
       val awsExecutor = new AWSExecutor()
       // TODO: check workers used by app and what provider are master using
       if (workers.size < coreForExecutors.size) {
-        // awsExecutor.create_vms(coreForExecutors.size - workers.size, masterUrl)
+        // awsExecutor.create_vms(coreForExecutors.size - workers.size, address.toString)
       }
 
       if (workers.size > coreForExecutors.size) {
