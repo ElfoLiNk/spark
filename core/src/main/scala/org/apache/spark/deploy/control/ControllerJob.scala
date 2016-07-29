@@ -60,7 +60,7 @@ class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Loggi
     logInfo("NumRecords: " + numRecord.toString +
       " DeadlineStage : " + deadlineStage.toString +
       " NominalRate: " + NOMINAL_RATE_RECORD_S.toString)
-    OVERSCALE * math.ceil(numRecord / (deadlineStage / 1000) / NOMINAL_RATE_RECORD_S).toInt
+    OVERSCALE * math.ceil(numRecord / (deadlineStage / 1000.0) / NOMINAL_RATE_RECORD_S).toInt
   }
 
   def computeDeadlineFirstStage(stage: StageInfo, weight: Long): Long = {
@@ -73,7 +73,7 @@ class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Loggi
 
   def computeCoreStageFromSize(deadlineStage: Long, totalSize: Long): Int = {
     logInfo("TotalSize RDD First Stage: " + totalSize.toString)
-    OVERSCALE * math.ceil(totalSize / (deadlineStage / 1000) / NOMINAL_RATE_DATA_S).toInt
+    OVERSCALE * math.ceil(totalSize / (deadlineStage / 1000.0) / NOMINAL_RATE_DATA_S).toInt
   }
 
   def computeTaskForExecutors(coresToBeAllocated: Int, totalTasksStage: Int): IndexedSeq[Int] = {
