@@ -60,7 +60,7 @@ class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Loggi
     logInfo("NumRecords: " + numRecord.toString +
       " DeadlineStage : " + deadlineStage.toString +
       " NominalRate: " + NOMINAL_RATE_RECORD_S.toString)
-    OVERSCALE * math.ceil(numRecord / (deadlineStage / 1000.0) / NOMINAL_RATE_RECORD_S).toInt
+    OVERSCALE * math.ceil((numRecord / (deadlineStage / 1000.0)) / NOMINAL_RATE_RECORD_S).toInt
   }
 
   def computeDeadlineFirstStage(stage: StageInfo, weight: Long): Long = {
