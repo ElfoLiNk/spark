@@ -30,6 +30,8 @@ class ControllerProxy
   val securityMgr = new SecurityManager(conf)
   val rpcEnv = RpcEnv.create("Controller", rpcEnvWorker.address.host, 5555, conf, securityMgr)
 
+  var executorStageId: Int = -1
+
   def start() {
     proxyEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME, createProxyEndpoint(driverUrl))
     // rpcEnv.awaitTermination()
@@ -75,12 +77,14 @@ class ControllerProxy
             taskCompleted = 0
             taskLaunched = 0
             totalTask = 0
+            executorStageId = -1
             if (controllerExecutor != null) controllerExecutor.stop()
           }
         }
         if ((TaskState.LOST == state) || (TaskState.FAILED == state)
           || (TaskState.KILLED == state)){
           taskFailed += 1
+          driver.get.send(Bind(execId.toString, executorStageId))
         }
         driver.get.send(StatusUpdate(executorId, taskId, state, data))
 
@@ -93,12 +97,16 @@ class ControllerProxy
           executorIdToAddress(execId.toString).host).send(RegisterExecutorFailed(message))
 
       case LaunchTask(taskId, data) =>
-        if (taskLaunched >= totalTask && taskFailed == 0) {
+        if (taskLaunched == totalTask && taskFailed == 0) {
           driver.get.send(StatusUpdate(execId.toString, taskId, TaskState.KILLED, data))
         } else {
           executorRefMap(executorIdToAddress(execId.toString).host).send(LaunchTask(taskId, data))
           taskLaunched += 1
           if (taskFailed > 0) taskFailed -= 1
+          if (taskLaunched == totalTask) {
+            driver.get.send(UnBind(execId.toString))
+          }
+
         }
 
       case StopExecutor =>
@@ -108,12 +116,14 @@ class ControllerProxy
 
       case Bind(executorId, stageId) =>
         driver.get.send(Bind(executorId, stageId))
+        executorStageId = stageId
         taskCompleted = 0
         taskLaunched = 0
 
-      case UnBind(executorId, stageId) =>
-        driver.get.send(UnBind(executorId, stageId))
+      case UnBind(executorId) =>
+        driver.get.send(UnBind(executorId))
         if (controllerExecutor != null) controllerExecutor.stop()
+        executorStageId = -1
 
       case ExecutorScaled(execId, cores, newFreeCores) =>
         val deltaFreeCore = cores - (taskLaunched - taskCompleted)

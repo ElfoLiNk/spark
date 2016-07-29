@@ -153,7 +153,7 @@ class ControllerJob(conf: SparkConf, deadlineJobMillisecond: Long) extends Loggi
 
   def unbind(workerUrl: String, executorId: String, stageId: Long): Unit = {
     val workerEndpoint = rpcEnv.setupEndpointRefByURI(workerUrl)
-    workerEndpoint.send(UnBind(executorId, stageId.toInt))
+    workerEndpoint.send(UnBind(executorId))
     logInfo("SEND UNBIND TO WORKER EID %s, SID %s".format
     (executorId, stageId))
   }

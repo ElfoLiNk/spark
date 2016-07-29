@@ -592,8 +592,8 @@ private[deploy] class Worker(
       execIdToProxy(executorId).proxyEndpoint.send(Bind(executorId, stageId))
       execIdToProxy(executorId).totalTask = tasks
 
-    case UnBind(executorId, stageId) =>
-      execIdToProxy(executorId).proxyEndpoint.send(UnBind(executorId, stageId))
+    case UnBind(executorId) =>
+      execIdToProxy(executorId).proxyEndpoint.send(UnBind(executorId))
       execIdToProxy(executorId).totalTask = 0
   }
 

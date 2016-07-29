@@ -121,7 +121,7 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
       case ExecutorFinishedTask(executorId) =>
         scheduler.unbind(executorId)
 
-      case UnBind(executorId, stageId) =>
+      case UnBind(executorId) =>
         scheduler.unbind(executorId)
 
       case ReviveOffers =>
